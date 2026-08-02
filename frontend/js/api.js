@@ -3,7 +3,7 @@
  * Handles all HTTP communication with the FastAPI backend.
  */
 
-// In production, set window.BACKEND_URL to your Railway backend URL.
+// In production, set window.BACKEND_URL to your Render backend URL.
 // For local dev, it falls back to localhost:8000.
 const API_BASE = window.BACKEND_URL || "http://localhost:8000";
 
