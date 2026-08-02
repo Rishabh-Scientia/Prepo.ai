@@ -238,7 +238,8 @@ function updateAnsweredCount() {
     const count = Object.keys(state.selectedAnswers).length;
     const ids = ["answered-count", "answered-count-bottom"];
     ids.forEach((id) => {
-        document.getElementById(id).textContent = count;
+        const el = document.getElementById(id);
+        if (el) el.textContent = count;
     });
 }
 

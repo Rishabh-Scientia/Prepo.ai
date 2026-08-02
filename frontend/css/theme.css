@@ -454,18 +454,55 @@ a {
 .score-average   { color: #d97706; }
 .score-poor      { color: #dc2626; }
 
-/* ── Responsive ──────────────────────────────────────────────────────── */
+/* ── Responsive & Mobile Enhancements ────────────────────────────────── */
+.option-btn .option-text {
+    flex: 1;
+    line-height: 1.5;
+    padding-top: 1px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.question-card .q-text {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
 @media (max-width: 640px) {
+    .question-card .q-header {
+        padding: 10px 12px;
+    }
+
     .question-card .q-body {
-        padding: 12px 14px;
+        padding: 12px;
+    }
+
+    .option-btn {
+        padding: 9px 12px;
+        gap: 8px;
+    }
+
+    .nav-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
     }
 
     .result-card .r-header {
-        padding: 10px 14px;
+        padding: 10px 12px;
+    }
+
+    .result-card .r-header-left {
+        gap: 8px;
     }
 
     .result-card .r-body {
-        padding: 0 14px 14px 14px;
+        padding: 0 12px 12px 12px;
+    }
+
+    .result-answer-row {
+        flex-direction: column;
+        gap: 6px;
     }
 }
 
