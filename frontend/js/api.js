@@ -3,9 +3,8 @@
  * Handles all HTTP communication with the FastAPI backend.
  */
 
-// In production, set window.BACKEND_URL to your Render backend URL.
-// For local dev, it falls back to localhost:8000.
-const API_BASE = window.BACKEND_URL || "http://localhost:8000";
+// Render backend URL (falls back to local dev if on localhost)
+const API_BASE = window.BACKEND_URL || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:8000" : "https://prepo-ai-fojm.onrender.com");
 
 const api = {
     /**
