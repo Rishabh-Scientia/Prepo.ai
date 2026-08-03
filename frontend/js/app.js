@@ -486,9 +486,15 @@ function truncate(str, maxLen) {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════
-// USER PROFILE & ATTEMPT HISTORY
-// ═══════════════════════════════════════════════════════════════════════════
+async function loadUserProfile() {
+    const user = auth.getCurrentUser();
+    if (!user) return;
+
+    // Render User Details
+    const displayName = auth.getDisplayName();
+    document.getElementById("profile-name").textContent = displayName;
+    document.getElementById("profile-email").textContent = user.email || "";
+    document.getElementById("profile-avatar").textContent = displayName.charAt(0).toUpperCase();
 
     if (state.activeProfileTab === "teacher") {
         loadTeacherSharedQuizzes();
@@ -515,6 +521,9 @@ function switchProfileTab(tab) {
 }
 
 async function loadUserProfileHistory() {
+    const container = document.getElementById("profile-attempts-container");
+    if (!container) return;
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your quiz history...</p>`;
 
     try {
         const data = await api.getUserAttempts();
