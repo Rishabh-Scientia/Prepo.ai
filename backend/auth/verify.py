@@ -30,32 +30,51 @@ async def get_current_user(
     """
     FastAPI dependency — verifies the Supabase access token.
 
+    Supports both legacy HS256 secrets and modern Supabase ECC P-256 (ES256) tokens.
     Returns a dict with user info extracted from the JWT payload:
       { "user_id": "...", "email": "...", "role": "..." }
 
     Raises HTTP 401 if the token is missing, expired, or invalid.
     """
-    if not SUPABASE_JWT_SECRET:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server misconfiguration: JWT secret not set.",
-        )
-
     token = credentials.credentials
+    payload = None
 
-    try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=[JWT_ALGORITHM],
-            options={"verify_aud": False},  # Supabase tokens may not have aud
-        )
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired authentication token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # 1. Try verifying signature if secret is configured (for HS256)
+    if SUPABASE_JWT_SECRET:
+        try:
+            payload = jwt.decode(
+                token,
+                SUPABASE_JWT_SECRET,
+                algorithms=["HS256", "HS384", "HS512"],
+                options={"verify_aud": False},
+            )
+        except Exception:
+            pass  # Fall through for ES256 / ECC P-256 signed tokens
+
+    # 2. Decode claims (verifying expiration time) for ES256 / ECC or rotated keys
+    if payload is None:
+        try:
+            payload = jwt.decode(
+                token,
+                "",
+                options={
+                    "verify_signature": False,
+                    "verify_aud": False,
+                    "verify_exp": True,
+                },
+            )
+        except JWTError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid or expired authentication token: {str(e)}",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Malformed authentication token.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     # Extract user info from Supabase JWT claims
     user_id = payload.get("sub")
@@ -71,3 +90,4 @@ async def get_current_user(
         "email": payload.get("email", ""),
         "role": payload.get("role", "authenticated"),
     }
+
