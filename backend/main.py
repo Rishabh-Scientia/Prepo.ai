@@ -107,10 +107,14 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
 
     quiz_data = result["quiz"]
 
-    # Generate session ID and store quiz server-side
+    # Generate session ID and store quiz server-side with config metadata
     session_id = str(uuid.uuid4())
     session_store.save(session_id, {
         "quiz": quiz_data,
+        "subject": request.subject,
+        "chapter": request.chapter,
+        "class_level": request.class_level,
+        "difficulty": request.difficulty.value,
         "language": request.language.value,
     })
 
@@ -196,13 +200,17 @@ async def evaluate_quiz(request: EvaluateQuizRequest, user: dict = Depends(get_c
     # Save completed quiz attempt to Supabase DB
     user_id = user.get("user_id")
     if user_id and quiz_data:
-        meta = quiz_data.get("metadata", {})
+        subject = session_data.get("subject", "General")
+        chapter = session_data.get("chapter", "General")
+        class_level = session_data.get("class_level", "General")
+        difficulty = session_data.get("difficulty", "Medium")
+
         save_quiz_attempt(
             user_id=user_id,
-            subject=meta.get("subject", "General"),
-            chapter=meta.get("chapter", "General"),
-            class_level=meta.get("class_level", "General"),
-            difficulty=meta.get("difficulty", "Medium"),
+            subject=subject,
+            chapter=chapter,
+            class_level=class_level,
+            difficulty=difficulty,
             language=language,
             score=result["score"],
             total=result["total"],
