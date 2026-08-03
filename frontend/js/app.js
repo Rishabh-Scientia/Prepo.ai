@@ -23,7 +23,24 @@ const state = {
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Pages that require authentication
+const PROTECTED_PAGES = ["config", "attempt", "results"];
+// Pages only for logged-out users
+const AUTH_PAGES = ["signin", "signup"];
+
 function navigateTo(page) {
+    // Route guard: redirect to signin if accessing protected page while logged out
+    if (PROTECTED_PAGES.includes(page) && !auth.isLoggedIn()) {
+        navigateTo("signin");
+        return;
+    }
+
+    // Route guard: redirect to home if accessing auth pages while logged in
+    if (AUTH_PAGES.includes(page) && auth.isLoggedIn()) {
+        navigateTo("home");
+        return;
+    }
+
     // Hide all pages
     document.querySelectorAll(".page").forEach((el) => {
         el.classList.add("hidden");
@@ -438,6 +455,8 @@ function truncate(str, maxLen) {
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════════════
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // Initialize auth first, then navigate
+    await auth.init();
     navigateTo("home");
 });

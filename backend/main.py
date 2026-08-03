@@ -14,7 +14,7 @@ import sys
 import uuid
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models.schemas import (
@@ -27,6 +27,7 @@ from models.schemas import (
     ExplanationBlock,
 )
 from store.session_store import session_store
+from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
 from graph.evaluate_graph import build_evaluate_graph
 
@@ -72,7 +73,7 @@ def health_check():
 
 
 @app.post("/api/generate-quiz", response_model=GenerateQuizResponse)
-async def generate_quiz(request: GenerateQuizRequest):
+async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_current_user)):
     """
     Generate a quiz using the LangGraph generation pipeline.
     Returns questions WITHOUT correct answers.
@@ -131,7 +132,7 @@ async def generate_quiz(request: GenerateQuizRequest):
 
 
 @app.post("/api/evaluate-quiz", response_model=EvaluateQuizResponse)
-async def evaluate_quiz(request: EvaluateQuizRequest):
+async def evaluate_quiz(request: EvaluateQuizRequest, user: dict = Depends(get_current_user)):
     """
     Evaluate the student's submitted answers.
     Uses deterministic scoring + LLM-generated explanations.

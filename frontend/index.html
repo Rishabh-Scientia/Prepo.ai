@@ -54,6 +54,9 @@
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="css/theme.css" />
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body class="bg-surface-100 text-gray-800 font-sans min-h-screen">
 
@@ -69,6 +72,16 @@
             <div class="flex items-center gap-2 sm:gap-4">
                 <a href="javascript:void(0)" onclick="navigateTo('home')" class="text-xs sm:text-sm text-gray-600 hover:text-primary-600 transition-colors no-underline px-1.5 py-1">Home</a>
                 <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 sm:px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Start Quiz</a>
+
+                <!-- Auth: Sign In button (shown when logged out) -->
+                <a id="nav-signin-btn" href="javascript:void(0)" onclick="navigateTo('signin')" class="text-xs sm:text-sm font-medium text-primary-600 border border-primary-600 hover:bg-primary-50 px-3 sm:px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Sign In</a>
+
+                <!-- Auth: User info (shown when logged in) -->
+                <div id="nav-user-info" class="nav-user-info hidden">
+                    <div class="nav-user-avatar" id="nav-user-avatar">U</div>
+                    <span class="nav-user-email hidden sm:inline" id="nav-user-email">user@email.com</span>
+                    <button class="nav-signout-btn" onclick="handleSignOut()">Sign Out</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -123,6 +136,82 @@
                     <span class="tag">B.Tech / B.Sc / B.Com</span>
                     <span class="tag">JEE / NEET / GATE</span>
                     <span class="tag">Custom Level</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ PAGE: SIGN IN ═══ -->
+    <section id="page-signin" class="page hidden">
+        <div class="max-w-4xl mx-auto px-4 py-12">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to your Prepo.ai account</p>
+                </div>
+                <div class="auth-body">
+                    <div id="signin-error" class="auth-error hidden"></div>
+                    <form id="signin-form" onsubmit="handleSignIn(event)">
+                        <div class="form-group">
+                            <label for="signin-email" class="form-label">Email Address</label>
+                            <input type="email" id="signin-email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
+                        </div>
+                        <div class="form-group" style="margin-top:16px">
+                            <label for="signin-password" class="form-label">Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="signin-password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required />
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('signin-password', this)">Show</button>
+                            </div>
+                        </div>
+                        <button type="submit" id="signin-submit-btn" class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm" style="margin-top:20px">
+                            Sign In
+                        </button>
+                    </form>
+                </div>
+                <div class="auth-footer">
+                    Don't have an account? <a href="javascript:void(0)" onclick="navigateTo('signup')">Create one</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ PAGE: SIGN UP ═══ -->
+    <section id="page-signup" class="page hidden">
+        <div class="max-w-4xl mx-auto px-4 py-12">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Create Account</h1>
+                    <p>Start practicing with AI-generated quizzes</p>
+                </div>
+                <div class="auth-body">
+                    <div id="signup-error" class="auth-error hidden"></div>
+                    <div id="signup-success" class="auth-success hidden"></div>
+                    <form id="signup-form" onsubmit="handleSignUp(event)">
+                        <div class="form-group">
+                            <label for="signup-email" class="form-label">Email Address</label>
+                            <input type="email" id="signup-email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
+                        </div>
+                        <div class="form-group" style="margin-top:16px">
+                            <label for="signup-password" class="form-label">Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="signup-password" class="form-input" placeholder="At least 6 characters" autocomplete="new-password" required minlength="6" />
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('signup-password', this)">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:16px">
+                            <label for="signup-confirm-password" class="form-label">Confirm Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="signup-confirm-password" class="form-input" placeholder="Repeat your password" autocomplete="new-password" required minlength="6" />
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('signup-confirm-password', this)">Show</button>
+                            </div>
+                        </div>
+                        <button type="submit" id="signup-submit-btn" class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm" style="margin-top:20px">
+                            Create Account
+                        </button>
+                    </form>
+                </div>
+                <div class="auth-footer">
+                    Already have an account? <a href="javascript:void(0)" onclick="navigateTo('signin')">Sign in</a>
                 </div>
             </div>
         </div>
@@ -353,7 +442,20 @@
     <!-- ⚡ Render backend URL -->
     <script>
         window.BACKEND_URL = "https://prepo-ai-fojm.onrender.com";
+
+        // Password visibility toggle
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = 'Hide';
+            } else {
+                input.type = 'password';
+                btn.textContent = 'Show';
+            }
+        }
     </script>
+    <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>
