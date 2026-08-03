@@ -24,7 +24,7 @@ const state = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Pages that require authentication
-const PROTECTED_PAGES = ["config", "attempt", "results"];
+const PROTECTED_PAGES = ["config", "attempt", "results", "profile"];
 // Pages only for logged-out users
 const AUTH_PAGES = ["signin", "signup"];
 
@@ -52,6 +52,11 @@ function navigateTo(page) {
         target.classList.remove("hidden");
         state.currentPage = page;
         window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Trigger profile loader if navigating to profile
+        if (page === "profile") {
+            loadUserProfile();
+        }
     }
 }
 
@@ -448,6 +453,127 @@ function escapeHtml(str) {
 function truncate(str, maxLen) {
     if (!str) return "";
     return str.length > maxLen ? str.slice(0, maxLen) + "…" : str;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// USER PROFILE & ATTEMPT HISTORY
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadUserProfile() {
+    const user = auth.getCurrentUser();
+    if (!user) return;
+
+    // Render User Details
+    const displayName = auth.getDisplayName();
+    document.getElementById("profile-name").textContent = displayName;
+    document.getElementById("profile-email").textContent = user.email || "";
+    document.getElementById("profile-avatar").textContent = displayName.charAt(0).toUpperCase();
+
+    const container = document.getElementById("profile-attempts-container");
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your quiz history...</p>`;
+
+    try {
+        const data = await api.getUserAttempts();
+        const attempts = data.attempts || [];
+
+        document.getElementById("profile-total-attempts").textContent = attempts.length;
+
+        if (attempts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-base text-gray-600 font-medium mb-1">No quizzes attempted yet</p>
+                    <p class="text-sm text-gray-400 mb-4">Start your first quiz to track your score and view detailed explanations!</p>
+                    <button onclick="navigateTo('config')" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors">
+                        Take a Quiz Now →
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Render Attempt Cards
+        container.innerHTML = attempts
+            .map((att) => {
+                const percent = att.total > 0 ? Math.round((att.score / att.total) * 100) : 0;
+                let badgeClass = "bg-red-50 text-danger border-red-200";
+                if (percent >= 80) badgeClass = "bg-green-50 text-success border-green-200";
+                else if (percent >= 60) badgeClass = "bg-blue-50 text-primary-600 border-blue-200";
+                else if (percent >= 40) badgeClass = "bg-amber-50 text-warn border-amber-200";
+
+                const dateStr = att.created_at
+                    ? new Date(att.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                      })
+                    : "";
+
+                return `
+                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base font-semibold text-gray-900 truncate">${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <span class="tag">${escapeHtml(att.class_level)}</span>
+                                <span>·</span>
+                                <span>${att.total} Questions</span>
+                                <span>·</span>
+                                <span>${escapeHtml(att.difficulty)}</span>
+                                ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                            <div class="border px-3 py-1 rounded-card text-center ${badgeClass}">
+                                <span class="text-sm font-bold block leading-tight">${att.score} / ${att.total}</span>
+                                <span class="text-[10px] font-medium opacity-80">${percent}%</span>
+                            </div>
+                            <button
+                                type="button"
+                                onclick="viewPastResponse('${att.id}')"
+                                class="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0"
+                            >
+                                View Response
+                            </button>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+    } catch (err) {
+        container.innerHTML = `
+            <p class="text-sm text-danger text-center py-4">Failed to load quiz history. Please refresh or try again.</p>
+        `;
+    }
+}
+
+async function viewPastResponse(attemptId) {
+    state.lastAction = () => viewPastResponse(attemptId);
+    navigateTo("loading");
+    document.getElementById("loading-title").textContent = "Loading quiz response...";
+    document.getElementById("loading-subtitle").textContent = "Fetching your saved score and step-by-step explanations.";
+
+    try {
+        const attempt = await api.getAttemptById(attemptId);
+        if (!attempt || !attempt.evaluation_results) {
+            throw new Error("Could not find saved details for this quiz attempt.");
+        }
+
+        const data = {
+            score: attempt.score,
+            total: attempt.total,
+            results: attempt.evaluation_results,
+        };
+
+        state.results = data;
+        renderResults(data);
+        navigateTo("results");
+    } catch (err) {
+        showError(err.message || "Failed to load past quiz response.");
+    }
 }
 
 

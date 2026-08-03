@@ -24,10 +24,15 @@ const auth = {
      * @param {string} password
      * @returns {Promise<{user: object|null, error: string|null}>}
      */
-    async signUp(email, password) {
+    async signUp(email, password, fullName = "") {
         const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
+            options: {
+                data: {
+                    full_name: fullName.trim(),
+                },
+            },
         });
 
         if (error) {
@@ -108,6 +113,18 @@ const auth = {
         return auth._currentUser !== null;
     },
 
+    /**
+     * Get display name for current user (Full Name or Email)
+     */
+    getDisplayName() {
+        if (!auth._currentUser) return "";
+        const meta = auth._currentUser.user_metadata || {};
+        if (meta.full_name && meta.full_name.trim()) {
+            return meta.full_name.trim();
+        }
+        return auth._currentUser.email ? auth._currentUser.email.split("@")[0] : "User";
+    },
+
     // ── Internal State ──────────────────────────────────────────────────
 
     _currentUser: null,
@@ -141,13 +158,19 @@ const auth = {
         const signInBtn = document.getElementById("nav-signin-btn");
         const userInfo = document.getElementById("nav-user-info");
         const userEmail = document.getElementById("nav-user-email");
+        const userAvatar = document.getElementById("nav-user-avatar");
 
         if (auth._currentUser) {
             // Logged in
             if (signInBtn) signInBtn.classList.add("hidden");
             if (userInfo) userInfo.classList.remove("hidden");
+            
+            const displayName = auth.getDisplayName();
             if (userEmail) {
-                userEmail.textContent = auth._currentUser.email || "User";
+                userEmail.textContent = displayName;
+            }
+            if (userAvatar) {
+                userAvatar.textContent = displayName.charAt(0).toUpperCase();
             }
         } else {
             // Logged out
@@ -210,6 +233,7 @@ async function handleSignIn(event) {
 async function handleSignUp(event) {
     event.preventDefault();
 
+    const fullName = (document.getElementById("signup-fullname")?.value || "").trim();
     const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value;
     const confirmPassword = document.getElementById("signup-confirm-password").value;
@@ -224,7 +248,7 @@ async function handleSignUp(event) {
     successEl.textContent = "";
 
     // Validate
-    if (!email || !password || !confirmPassword) {
+    if (!fullName || !email || !password || !confirmPassword) {
         errorEl.textContent = "Please fill in all fields.";
         errorEl.classList.remove("hidden");
         return;
@@ -246,7 +270,7 @@ async function handleSignUp(event) {
     submitBtn.disabled = true;
     submitBtn.textContent = "Creating account...";
 
-    const { user, error, needsConfirmation } = await auth.signUp(email, password);
+    const { user, error, needsConfirmation } = await auth.signUp(email, password, fullName);
 
     // Re-enable button
     submitBtn.disabled = false;

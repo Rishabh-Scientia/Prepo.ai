@@ -88,5 +88,54 @@ const api = {
 
         return res.json();
     },
+
+    /**
+     * Fetch all past quiz attempts for logged-in user
+     * @returns {Promise<{ attempts: Array }>}
+     */
+    async getUserAttempts() {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/user/attempts`, {
+            method: "GET",
+            headers: headers,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to fetch attempt history (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
+     * Fetch full detailed breakdown for a specific attempt
+     * @param {string} attemptId
+     * @returns {Promise<object>}
+     */
+    async getAttemptById(attemptId) {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/user/attempts/${attemptId}`, {
+            method: "GET",
+            headers: headers,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to fetch quiz attempt (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
 };
 

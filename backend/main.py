@@ -27,6 +27,7 @@ from models.schemas import (
     ExplanationBlock,
 )
 from store.session_store import session_store
+from store.db_store import save_quiz_attempt, get_user_attempts, get_attempt_by_id
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
 from graph.evaluate_graph import build_evaluate_graph
@@ -192,8 +193,51 @@ async def evaluate_quiz(request: EvaluateQuizRequest, user: dict = Depends(get_c
             )
         )
 
+    # Save completed quiz attempt to Supabase DB
+    user_id = user.get("user_id")
+    if user_id and quiz_data:
+        meta = quiz_data.get("metadata", {})
+        save_quiz_attempt(
+            user_id=user_id,
+            subject=meta.get("subject", "General"),
+            chapter=meta.get("chapter", "General"),
+            class_level=meta.get("class_level", "General"),
+            difficulty=meta.get("difficulty", "Medium"),
+            language=language,
+            score=result["score"],
+            total=result["total"],
+            questions=quiz_data.get("questions", []),
+            user_answers=[a.model_dump() for a in request.answers],
+            evaluation_results=[q.model_dump() for q in question_results],
+        )
+
     return EvaluateQuizResponse(
         score=result["score"],
         total=result["total"],
         results=question_results,
     )
+
+
+# ── User Profile & History Routes ────────────────────────────────────────────
+
+@app.get("/api/user/attempts")
+async def fetch_user_attempts(user: dict = Depends(get_current_user)):
+    """
+    Get all past quiz attempts for the authenticated user.
+    """
+    user_id = user.get("user_id")
+    attempts = get_user_attempts(user_id)
+    return {"attempts": attempts}
+
+
+@app.get("/api/user/attempts/{attempt_id}")
+async def fetch_attempt_detail(attempt_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get detailed breakdown of a specific past quiz attempt.
+    """
+    user_id = user.get("user_id")
+    attempt = get_attempt_by_id(attempt_id, user_id)
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return attempt
+
