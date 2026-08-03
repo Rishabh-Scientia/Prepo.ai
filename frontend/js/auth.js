@@ -9,7 +9,8 @@ const SUPABASE_URL = "https://cahlcjvndiytjluzhpop.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhaGxjanZuZGl5dGpsdXpocG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODM1NTUsImV4cCI6MjEwMTI1OTU1NX0.Srvqu56S7mJ557w_pNnwelEAVPLD88jD8MgIf2eRVxY";
 
 // Initialize Supabase client (loaded via CDN)
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Note: CDN exposes `var supabase` globally, so we use a different name
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -24,7 +25,7 @@ const auth = {
      * @returns {Promise<{user: object|null, error: string|null}>}
      */
     async signUp(email, password) {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
         });
@@ -52,7 +53,7 @@ const auth = {
      * @returns {Promise<{user: object|null, error: string|null}>}
      */
     async signIn(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password,
         });
@@ -68,7 +69,7 @@ const auth = {
      * Sign out the current user
      */
     async signOut() {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
         if (error) {
             console.error("Sign out error:", error.message);
         }
@@ -79,7 +80,7 @@ const auth = {
      * @returns {Promise<{accessToken: string|null, user: object|null}>}
      */
     async getSession() {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
 
         if (!session) {
             return { accessToken: null, user: null };
@@ -121,7 +122,7 @@ const auth = {
         auth._updateNavbar();
 
         // Listen for auth state changes
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === "SIGNED_IN" && session) {
                 auth._currentUser = session.user;
                 auth._updateNavbar();
