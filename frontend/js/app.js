@@ -319,10 +319,6 @@ async function submitQuiz() {
         }
         return;
     }
-    const answers = state.questions.map((q) => ({
-        question_id: q.id,
-        selected_option: state.selectedAnswers[q.id] || "",
-    }));
 
     // Show loading
     state.lastAction = () => submitQuiz();
