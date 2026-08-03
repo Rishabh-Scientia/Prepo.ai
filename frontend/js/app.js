@@ -292,6 +292,12 @@ async function submitQuiz() {
         if (!proceed) return;
     }
 
+    // Build answers array — include all questions (unanswered get empty string)
+    const answers = state.questions.map((q) => ({
+        question_id: q.id,
+        selected_option: state.selectedAnswers[q.id] || "",
+    }));
+
     // If in Student Mode, call student submission endpoint
     if (state.isStudentMode) {
         state.lastAction = () => submitQuiz();
