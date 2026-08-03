@@ -243,9 +243,16 @@
 
             <!-- Quiz History Section -->
             <div class="border border-surface-200 rounded-card bg-white">
-                <div class="px-5 py-4 border-b border-surface-200 bg-surface-100 flex items-center justify-between">
-                    <h2 class="text-base font-semibold text-gray-900 m-0">My Quiz History</h2>
-                    <button onclick="navigateTo('config')" class="text-xs font-semibold text-primary-600 hover:text-primary-700">
+                <div class="px-5 py-3 border-b border-surface-200 bg-surface-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <button id="tab-btn-history" onclick="switchProfileTab('history')" class="text-sm font-semibold px-3 py-1.5 rounded-card bg-primary-600 text-white transition-colors">
+                            My Quiz History
+                        </button>
+                        <button id="tab-btn-teacher" onclick="switchProfileTab('teacher')" class="text-sm font-semibold px-3 py-1.5 rounded-card bg-surface-200 text-gray-700 hover:bg-surface-300 transition-colors">
+                            Shared Quizzes (Teacher)
+                        </button>
+                    </div>
+                    <button onclick="navigateTo('config')" class="text-xs font-semibold text-primary-600 hover:text-primary-700 self-end sm:self-auto">
                         + Take New Quiz
                     </button>
                 </div>
@@ -411,13 +418,23 @@
                             <h1 class="text-base font-semibold text-gray-900 m-0 truncate" id="attempt-title">Quiz</h1>
                             <p class="text-xs sm:text-sm text-gray-500 m-0 mt-0.5 leading-snug break-words" id="attempt-meta"></p>
                         </div>
-                        <button
-                            id="submit-quiz-btn-top"
-                            onclick="submitQuiz()"
-                            class="w-full sm:w-auto shrink-0 bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-5 py-2 rounded-card transition-colors text-sm"
-                        >
-                            Submit Quiz
-                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onclick="shareCurrentQuiz()"
+                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 font-medium px-3 py-1.5 rounded-card transition-colors text-xs flex items-center gap-1.5"
+                                title="Share this quiz with your students via link"
+                            >
+                                <span>🔗</span> <span>Share Quiz</span>
+                            </button>
+                            <button
+                                id="submit-quiz-btn-top"
+                                onclick="submitQuiz()"
+                                class="bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-card transition-colors text-sm"
+                            >
+                                Submit Quiz
+                            </button>
+                        </div>
                     </div>
 
                     <div id="questions-container" class="space-y-4">
@@ -452,6 +469,10 @@
                     <p class="text-sm mt-2 m-0" id="score-percent"></p>
                 </div>
                 <div class="px-5 py-3 border-t border-surface-200 bg-surface-100 flex items-center justify-center gap-4">
+                    <button onclick="shareCurrentQuiz()" class="text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors flex items-center gap-1">
+                        <span>🔗</span> Share Quiz
+                    </button>
+                    <span class="text-surface-300">|</span>
                     <button onclick="navigateTo('config')" class="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">Take Another Quiz</button>
                     <span class="text-surface-300">|</span>
                     <button onclick="navigateTo('home')" class="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors">Go Home</button>
@@ -464,6 +485,60 @@
             </div>
         </div>
     </section>
+
+    <!-- ═══ SHARE MODAL ═══ -->
+    <div id="share-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40">
+        <div class="bg-white rounded-card border border-surface-200 max-w-md w-full mx-4 p-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-semibold text-gray-900 m-0">🔗 Share Quiz with Students</h3>
+                <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600 text-lg font-bold">×</button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Anyone with this link can attempt the quiz. Student responses will be saved in your Teacher Dashboard.</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="share-url-input" class="form-input text-xs select-all" readonly />
+                <button onclick="copyShareUrl()" id="copy-share-btn" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors shrink-0">
+                    Copy Link
+                </button>
+            </div>
+            <p id="share-copied-msg" class="text-xs text-success hidden">✓ Link copied to clipboard!</p>
+        </div>
+    </div>
+
+    <!-- ═══ STUDENT START MODAL ═══ -->
+    <div id="student-start-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50">
+        <div class="bg-white rounded-card border border-surface-200 max-w-md w-full mx-4 p-6">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center mx-auto mb-2 text-xl font-bold">📝</div>
+                <h3 class="text-lg font-bold text-gray-900 m-0" id="student-modal-title">Shared Test</h3>
+                <p class="text-xs text-gray-500 mt-1 m-0" id="student-modal-meta"></p>
+            </div>
+            <form onsubmit="startStudentQuiz(event)">
+                <div class="form-group mb-4">
+                    <label for="student-name-input" class="form-label">Enter Your Full Name <span class="text-danger">*</span></label>
+                    <input type="text" id="student-name-input" class="form-input" placeholder="e.g., Rahul Sharma" required />
+                </div>
+                <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-card transition-colors text-sm">
+                    Start Test →
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ TEACHER LEADERBOARD / RESPONSES MODAL ═══ -->
+    <div id="responses-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40">
+        <div class="bg-white rounded-card border border-surface-200 max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-surface-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900 m-0" id="responses-modal-title">Student Responses</h3>
+                    <p class="text-xs text-gray-500 m-0 mt-0.5" id="responses-modal-meta"></p>
+                </div>
+                <button onclick="closeResponsesModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 space-y-3" id="responses-list-container">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
 
     <!-- ═══ ERROR MODAL ═══ -->
     <div id="error-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40">

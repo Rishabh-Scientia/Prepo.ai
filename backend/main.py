@@ -27,7 +27,16 @@ from models.schemas import (
     ExplanationBlock,
 )
 from store.session_store import session_store
-from store.db_store import save_quiz_attempt, get_user_attempts, get_attempt_by_id
+from store.db_store import (
+    save_quiz_attempt,
+    get_user_attempts,
+    get_attempt_by_id,
+    create_shared_quiz,
+    get_shared_quiz,
+    submit_student_response,
+    get_teacher_shared_quizzes,
+    get_quiz_student_responses,
+)
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
 from graph.evaluate_graph import build_evaluate_graph
@@ -248,4 +257,126 @@ async def fetch_attempt_detail(attempt_id: str, user: dict = Depends(get_current
     if not attempt:
         raise HTTPException(status_code=404, detail="Quiz attempt not found.")
     return attempt
+
+
+# ── Shareable Quiz / Teacher Mode Routes ──────────────────────────────────────
+
+@app.post("/api/quiz/share")
+async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
+    """
+    Teacher shares a generated quiz session with students.
+    """
+    session_id = payload.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+
+    session_data = session_store.get(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Quiz session expired or not found.")
+
+    quiz_data = session_data.get("quiz", {})
+    questions = quiz_data.get("questions", [])
+    if not questions:
+        raise HTTPException(status_code=400, detail="No questions found in this quiz.")
+
+    user_id = user.get("user_id")
+    email = user.get("email", "Teacher")
+    teacher_name = email.split("@")[0] if "@" in email else "Teacher"
+
+    shared = create_shared_quiz(
+        created_by=user_id,
+        teacher_name=teacher_name,
+        subject=session_data.get("subject", "General"),
+        chapter=session_data.get("chapter", "General"),
+        class_level=session_data.get("class_level", "General"),
+        difficulty=session_data.get("difficulty", "Medium"),
+        language=session_data.get("language", "English"),
+        questions=questions,
+    )
+
+    if not shared:
+        raise HTTPException(status_code=500, detail="Failed to create shared quiz.")
+
+    return {
+        "shared_quiz_id": shared.get("id"),
+        "subject": shared.get("subject"),
+        "chapter": shared.get("chapter"),
+    }
+
+
+@app.get("/api/quiz/shared/{quiz_id}")
+async def get_shared_quiz_questions(quiz_id: str):
+    """
+    Public endpoint: Student loads shared quiz by ID (strips correct answers).
+    """
+    shared = get_shared_quiz(quiz_id)
+    if not shared:
+        raise HTTPException(status_code=404, detail="Shared quiz not found or expired.")
+
+    # Strip correct_answer from each question before sending to student
+    public_questions = [
+        {
+            "id": q["id"],
+            "type": q.get("type", "mcq"),
+            "question": q["question"],
+            "options": q["options"],
+            "difficulty": q.get("difficulty", "medium"),
+        }
+        for q in shared.get("questions", [])
+    ]
+
+    return {
+        "quiz_id": shared["id"],
+        "teacher_name": shared.get("teacher_name", "Teacher"),
+        "subject": shared["subject"],
+        "chapter": shared["chapter"],
+        "class_level": shared["class_level"],
+        "difficulty": shared["difficulty"],
+        "language": shared.get("language", "English"),
+        "questions": public_questions,
+    }
+
+
+@app.post("/api/quiz/shared/{quiz_id}/submit")
+async def submit_shared_quiz_student(quiz_id: str, payload: dict):
+    """
+    Public endpoint: Student submits answers with their Name.
+    """
+    student_name = payload.get("student_name", "").strip()
+    answers = payload.get("answers", [])
+
+    if not student_name:
+        raise HTTPException(status_code=400, detail="Student name is required.")
+
+    result = submit_student_response(
+        quiz_id=quiz_id,
+        student_name=student_name,
+        student_answers=answers,
+    )
+
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to record submission.")
+
+    return result
+
+
+@app.get("/api/teacher/shared-quizzes")
+async def get_teacher_quizzes(user: dict = Depends(get_current_user)):
+    """
+    Teacher endpoint: Get all shared quizzes created by this teacher.
+    """
+    user_id = user.get("user_id")
+    quizzes = get_teacher_shared_quizzes(user_id)
+    return {"shared_quizzes": quizzes}
+
+
+@app.get("/api/teacher/shared-quizzes/{quiz_id}/responses")
+async def get_shared_quiz_leaderboard(quiz_id: str, user: dict = Depends(get_current_user)):
+    """
+    Teacher endpoint: Get student submission leaderboard for a specific shared quiz.
+    """
+    user_id = user.get("user_id")
+    responses = get_quiz_student_responses(quiz_id, user_id)
+    return {"responses": responses}
+
 

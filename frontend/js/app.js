@@ -16,6 +16,11 @@ const state = {
     selectedDifficulty: "Medium",
     results: null,         // evaluation results from API
     lastAction: null,      // for retry
+    activeProfileTab: "history", // "history" | "teacher"
+    isStudentMode: false,
+    studentName: "",
+    pendingSharedQuizId: null,
+    sharedQuizData: null,
 };
 
 
@@ -29,16 +34,21 @@ const PROTECTED_PAGES = ["config", "attempt", "results", "profile"];
 const AUTH_PAGES = ["signin", "signup"];
 
 function navigateTo(page) {
-    // Route guard: redirect to signin if accessing protected page while logged out
-    if (PROTECTED_PAGES.includes(page) && !auth.isLoggedIn()) {
-        navigateTo("signin");
-        return;
-    }
+    // Student mode bypasses auth route guard for attempt & results
+    if (state.isStudentMode && (page === "attempt" || page === "results" || page === "loading")) {
+        // Allow student
+    } else {
+        // Route guard: redirect to signin if accessing protected page while logged out
+        if (PROTECTED_PAGES.includes(page) && !auth.isLoggedIn()) {
+            navigateTo("signin");
+            return;
+        }
 
-    // Route guard: redirect to home if accessing auth pages while logged in
-    if (AUTH_PAGES.includes(page) && auth.isLoggedIn()) {
-        navigateTo("home");
-        return;
+        // Route guard: redirect to home if accessing auth pages while logged in
+        if (AUTH_PAGES.includes(page) && auth.isLoggedIn()) {
+            navigateTo("home");
+            return;
+        }
     }
 
     // Hide all pages
@@ -282,7 +292,27 @@ async function submitQuiz() {
         if (!proceed) return;
     }
 
-    // Build answers array — include all questions (unanswered get empty string)
+    // If in Student Mode, call student submission endpoint
+    if (state.isStudentMode) {
+        state.lastAction = () => submitQuiz();
+        navigateTo("loading");
+        document.getElementById("loading-title").textContent = "Submitting your test...";
+        document.getElementById("loading-subtitle").textContent = "Evaluating answers and saving your score.";
+
+        try {
+            const data = await api.submitSharedQuiz(state.pendingSharedQuizId, state.studentName, answers);
+            state.results = {
+                score: data.score,
+                total: data.total,
+                results: data.evaluation_results,
+            };
+            renderResults(state.results);
+            navigateTo("results");
+        } catch (err) {
+            showError(err.message || "Failed to submit test.");
+        }
+        return;
+    }
     const answers = state.questions.map((q) => ({
         question_id: q.id,
         selected_option: state.selectedAnswers[q.id] || "",
@@ -460,18 +490,31 @@ function truncate(str, maxLen) {
 // USER PROFILE & ATTEMPT HISTORY
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function loadUserProfile() {
-    const user = auth.getCurrentUser();
-    if (!user) return;
+    if (state.activeProfileTab === "teacher") {
+        loadTeacherSharedQuizzes();
+    } else {
+        loadUserProfileHistory();
+    }
+}
 
-    // Render User Details
-    const displayName = auth.getDisplayName();
-    document.getElementById("profile-name").textContent = displayName;
-    document.getElementById("profile-email").textContent = user.email || "";
-    document.getElementById("profile-avatar").textContent = displayName.charAt(0).toUpperCase();
+function switchProfileTab(tab) {
+    state.activeProfileTab = tab;
 
-    const container = document.getElementById("profile-attempts-container");
-    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your quiz history...</p>`;
+    const btnHistory = document.getElementById("tab-btn-history");
+    const btnTeacher = document.getElementById("tab-btn-teacher");
+
+    if (tab === "teacher") {
+        btnHistory.className = "text-sm font-semibold px-3 py-1.5 rounded-card bg-surface-200 text-gray-700 hover:bg-surface-300 transition-colors";
+        btnTeacher.className = "text-sm font-semibold px-3 py-1.5 rounded-card bg-primary-600 text-white transition-colors";
+        loadTeacherSharedQuizzes();
+    } else {
+        btnHistory.className = "text-sm font-semibold px-3 py-1.5 rounded-card bg-primary-600 text-white transition-colors";
+        btnTeacher.className = "text-sm font-semibold px-3 py-1.5 rounded-card bg-surface-200 text-gray-700 hover:bg-surface-300 transition-colors";
+        loadUserProfileHistory();
+    }
+}
+
+async function loadUserProfileHistory() {
 
     try {
         const data = await api.getUserAttempts();
@@ -578,11 +621,282 @@ async function viewPastResponse(attemptId) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// TEACHER DASHBOARD & SHARED QUIZZES
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function shareCurrentQuiz() {
+    if (!state.sessionId && !state.pendingSharedQuizId) {
+        showError("No active quiz session found to share.");
+        return;
+    }
+
+    if (!auth.isLoggedIn()) {
+        showError("You must be signed in to share quizzes with students.");
+        return;
+    }
+
+    try {
+        let quizId = state.pendingSharedQuizId;
+        if (!quizId && state.sessionId) {
+            const data = await api.shareQuiz(state.sessionId);
+            quizId = data.shared_quiz_id;
+        }
+
+        const shareUrl = `${window.location.origin}${window.location.pathname}?quiz_id=${quizId}`;
+        document.getElementById("share-url-input").value = shareUrl;
+        document.getElementById("share-copied-msg").classList.add("hidden");
+
+        const modal = document.getElementById("share-modal");
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+    } catch (err) {
+        showError(err.message || "Failed to generate share link.");
+    }
+}
+
+function closeShareModal() {
+    const modal = document.getElementById("share-modal");
+    modal.classList.add("hidden");
+    modal.style.display = "";
+}
+
+function copyShareUrl() {
+    const input = document.getElementById("share-url-input");
+    input.select();
+    navigator.clipboard.writeText(input.value);
+
+    const msg = document.getElementById("share-copied-msg");
+    msg.classList.remove("hidden");
+    setTimeout(() => msg.classList.add("hidden"), 3000);
+}
+
+async function loadTeacherSharedQuizzes() {
+    const container = document.getElementById("profile-attempts-container");
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your shared quizzes...</p>`;
+
+    try {
+        const data = await api.getTeacherSharedQuizzes();
+        const quizzes = data.shared_quizzes || [];
+
+        if (quizzes.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-base text-gray-600 font-medium mb-1">No shared quizzes yet</p>
+                    <p class="text-sm text-gray-400 mb-4">Generate any quiz and click "Share Quiz" to share it with your students!</p>
+                    <button onclick="navigateTo('config')" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors">
+                        Create & Share Quiz →
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = quizzes
+            .map((q) => {
+                const dateStr = q.created_at
+                    ? new Date(q.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                      })
+                    : "";
+
+                const shareUrl = `${window.location.origin}${window.location.pathname}?quiz_id=${q.id}`;
+
+                return `
+                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base font-semibold text-gray-900 truncate">${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <span class="tag">${escapeHtml(q.class_level)}</span>
+                                <span>·</span>
+                                <span>${escapeHtml(q.difficulty)}</span>
+                                <span>·</span>
+                                <span>${escapeHtml(q.language)}</span>
+                                ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                            <div class="bg-primary-50 border border-primary-200 text-primary-700 px-3 py-1 rounded-card text-center">
+                                <span class="text-sm font-bold block leading-tight">${q.submission_count || 0}</span>
+                                <span class="text-[10px] font-medium uppercase">Students</span>
+                            </div>
+                            <button
+                                type="button"
+                                onclick="copyDirectShareUrl('${shareUrl}')"
+                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 text-xs font-medium px-3 py-2 rounded-card transition-colors shrink-0"
+                            >
+                                Copy Link
+                            </button>
+                            <button
+                                type="button"
+                                onclick="viewQuizLeaderboard('${q.id}')"
+                                class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0"
+                            >
+                                View Responses
+                            </button>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+    } catch (err) {
+        container.innerHTML = `
+            <p class="text-sm text-danger text-center py-4">Failed to load shared quizzes. Please try again.</p>
+        `;
+    }
+}
+
+function copyDirectShareUrl(url) {
+    navigator.clipboard.writeText(url);
+    alert("Shareable link copied to clipboard!");
+}
+
+async function viewQuizLeaderboard(quizId) {
+    const modal = document.getElementById("responses-modal");
+    const container = document.getElementById("responses-list-container");
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading student responses...</p>`;
+
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+
+    try {
+        const data = await api.getQuizResponses(quizId);
+        const responses = data.responses || [];
+
+        document.getElementById("responses-modal-title").textContent = `Student Leaderboard (${responses.length})`;
+
+        if (responses.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-sm text-gray-500 mb-2">No students have submitted this test yet.</p>
+                    <p class="text-xs text-gray-400">Share the link with your class to see live scores here!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="border border-surface-200 rounded-card overflow-hidden">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-surface-100 border-b border-surface-200 text-gray-600 uppercase font-semibold">
+                        <tr>
+                            <th class="p-3">#</th>
+                            <th class="p-3">Student Name</th>
+                            <th class="p-3">Score</th>
+                            <th class="p-3">Percentage</th>
+                            <th class="p-3">Submitted At</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-surface-200 bg-white">
+                        ${responses
+                            .map((r, idx) => {
+                                const percent = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0;
+                                let color = "text-danger";
+                                if (percent >= 80) color = "text-success font-bold";
+                                else if (percent >= 60) color = "text-primary-600 font-semibold";
+                                else if (percent >= 40) color = "text-warn font-semibold";
+
+                                const dateStr = r.submitted_at
+                                    ? new Date(r.submitted_at).toLocaleDateString(undefined, {
+                                          month: "short",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                      })
+                                    : "";
+
+                                return `
+                                    <tr class="hover:bg-surface-50 transition-colors">
+                                        <td class="p-3 font-semibold text-gray-400">${idx + 1}</td>
+                                        <td class="p-3 font-semibold text-gray-900">${escapeHtml(r.student_name)}</td>
+                                        <td class="p-3 font-bold text-gray-900">${r.score} / ${r.total}</td>
+                                        <td class="p-3 ${color}">${percent}%</td>
+                                        <td class="p-3 text-gray-500">${dateStr}</td>
+                                    </tr>
+                                `;
+                            })
+                            .join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-danger text-center py-4">Failed to load student responses.</p>`;
+    }
+}
+
+function closeResponsesModal() {
+    const modal = document.getElementById("responses-modal");
+    modal.classList.add("hidden");
+    modal.style.display = "";
+}
+
+async function checkStudentShareUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const quizId = urlParams.get("quiz_id");
+
+    if (quizId) {
+        state.isStudentMode = true;
+        state.pendingSharedQuizId = quizId;
+
+        try {
+            const data = await api.getSharedQuiz(quizId);
+            state.sharedQuizData = data;
+
+            document.getElementById("student-modal-title").textContent = `${data.subject} — ${data.chapter}`;
+            document.getElementById("student-modal-meta").textContent = `Teacher: ${data.teacher_name} · ${data.class_level} · ${data.questions.length} Qs · ${data.difficulty}`;
+
+            const modal = document.getElementById("student-start-modal");
+            modal.classList.remove("hidden");
+            modal.style.display = "flex";
+        } catch (err) {
+            showError("The shared quiz link is invalid or expired.");
+        }
+    }
+}
+
+function startStudentQuiz(event) {
+    event.preventDefault();
+    const nameInput = document.getElementById("student-name-input");
+    const name = (nameInput.value || "").trim();
+
+    if (!name) return;
+
+    state.studentName = name;
+    document.getElementById("student-start-modal").classList.add("hidden");
+    document.getElementById("student-start-modal").style.display = "";
+
+    state.questions = state.sharedQuizData.questions;
+    state.selectedAnswers = {};
+
+    renderQuizAttempt({
+        subject: state.sharedQuizData.subject,
+        chapter: state.sharedQuizData.chapter,
+        class_level: state.sharedQuizData.class_level,
+        difficulty: state.sharedQuizData.difficulty,
+        num_questions: state.sharedQuizData.questions.length,
+        language: state.sharedQuizData.language,
+    });
+
+    navigateTo("attempt");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Initialize auth first, then navigate
+    // Initialize auth first
     await auth.init();
-    navigateTo("home");
+
+    // Check if opening via share link
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("quiz_id")) {
+        checkStudentShareUrl();
+    } else {
+        navigateTo("home");
+    }
 });
