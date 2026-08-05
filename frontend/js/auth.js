@@ -11,7 +11,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Initialize Supabase client (loaded via CDN)
 // Note: CDN exposes `var supabase` globally, so we use a different name
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const supabase = supabaseClient;
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -145,9 +144,12 @@ const auth = {
                 auth._currentUser = session.user;
                 auth._updateNavbar();
             } else if (event === "SIGNED_OUT") {
+                const hadUser = auth._currentUser !== null;
                 auth._currentUser = null;
                 auth._updateNavbar();
-                navigateTo("home");
+                if (hadUser) {
+                    navigateTo("home");
+                }
             }
         });
     },
@@ -306,6 +308,7 @@ async function handleSignOut() {
  * Handle Google OAuth login
  */
 const handleGoogleLogin = async () => {
+    const supabase = supabaseClient;
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

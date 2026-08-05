@@ -34,18 +34,20 @@ const PROTECTED_PAGES = ["config", "attempt", "results", "profile"];
 const AUTH_PAGES = ["signin", "signup"];
 
 function navigateTo(page) {
+    const isLoggedIn = (typeof auth !== "undefined" && auth && typeof auth.isLoggedIn === "function") ? auth.isLoggedIn() : false;
+
     // Student mode bypasses auth route guard for attempt & results
     if (state.isStudentMode && (page === "attempt" || page === "results" || page === "loading")) {
         // Allow student
     } else {
         // Route guard: redirect to signin if accessing protected page while logged out
-        if (PROTECTED_PAGES.includes(page) && !auth.isLoggedIn()) {
+        if (PROTECTED_PAGES.includes(page) && !isLoggedIn) {
             navigateTo("signin");
             return;
         }
 
         // Route guard: redirect to home if accessing auth pages while logged in
-        if (AUTH_PAGES.includes(page) && auth.isLoggedIn()) {
+        if (AUTH_PAGES.includes(page) && isLoggedIn) {
             navigateTo("home");
             return;
         }
