@@ -11,6 +11,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Initialize Supabase client (loaded via CDN)
 // Note: CDN exposes `var supabase` globally, so we use a different name
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = supabaseClient;
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -300,3 +301,29 @@ async function handleSignUp(event) {
 async function handleSignOut() {
     await auth.signOut();
 }
+
+/**
+ * Handle Google OAuth login
+ */
+const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+        },
+    });
+
+    if (error) {
+        console.error("Google sign in error:", error.message);
+        const signinErrorEl = document.getElementById("signin-error");
+        if (signinErrorEl) {
+            signinErrorEl.textContent = error.message;
+            signinErrorEl.classList.remove("hidden");
+        }
+        const signupErrorEl = document.getElementById("signup-error");
+        if (signupErrorEl) {
+            signupErrorEl.textContent = error.message;
+            signupErrorEl.classList.remove("hidden");
+        }
+    }
+};
