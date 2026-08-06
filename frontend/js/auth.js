@@ -163,18 +163,24 @@ const auth = {
         const userEmail = document.getElementById("nav-user-email");
         const userAvatar = document.getElementById("nav-user-avatar");
 
+        const mobileSignInBtn = document.getElementById("mobile-nav-signin-btn");
+        const mobileUserInfo = document.getElementById("mobile-nav-user-info");
+        const mobileUserName = document.getElementById("mobile-nav-user-name");
+        const mobileUserAvatar = document.getElementById("mobile-nav-user-avatar");
+
         if (auth._currentUser) {
             // Logged in
             if (signInBtn) signInBtn.classList.add("hidden");
             if (userInfo) userInfo.classList.remove("hidden");
+            if (mobileSignInBtn) mobileSignInBtn.classList.add("hidden");
+            if (mobileUserInfo) mobileUserInfo.classList.remove("hidden");
             
             const displayName = auth.getDisplayName();
-            if (userEmail) {
-                userEmail.textContent = displayName;
-            }
-            if (userAvatar) {
-                userAvatar.textContent = displayName.charAt(0).toUpperCase();
-            }
+            if (userEmail) userEmail.textContent = displayName;
+            if (userAvatar) userAvatar.textContent = displayName.charAt(0).toUpperCase();
+            if (mobileUserName) mobileUserName.textContent = displayName;
+            if (mobileUserAvatar) mobileUserAvatar.textContent = displayName.charAt(0).toUpperCase();
+
             if (typeof refreshUserCredits === "function") {
                 refreshUserCredits();
             }
@@ -182,6 +188,9 @@ const auth = {
             // Logged out
             if (signInBtn) signInBtn.classList.remove("hidden");
             if (userInfo) userInfo.classList.add("hidden");
+            if (mobileSignInBtn) mobileSignInBtn.classList.remove("hidden");
+            if (mobileUserInfo) mobileUserInfo.classList.add("hidden");
+
             const creditsBadge = document.getElementById("nav-credits-badge");
             if (creditsBadge) creditsBadge.classList.add("hidden");
         }

@@ -522,6 +522,20 @@ async function refreshUserCredits() {
     }
 }
 
+function toggleMobileMenu() {
+    const menu = document.getElementById("mobile-menu");
+    if (menu) {
+        menu.classList.toggle("hidden");
+    }
+}
+
+function closeMobileMenu() {
+    const menu = document.getElementById("mobile-menu");
+    if (menu) {
+        menu.classList.add("hidden");
+    }
+}
+
 function showError(message) {
     if (message && (message.includes("CREDIT_LIMIT_REACHED") || message.toLowerCase().includes("credit limit"))) {
         closeErrorModal();
