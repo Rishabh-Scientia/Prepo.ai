@@ -714,6 +714,26 @@ a {
     color: #374151;
 }
 
+/* ── Responsive Navbar ───────────────────────────────────────────────── */
+.desktop-nav-items {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mobile-hamburger-btn {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .desktop-nav-items {
+        display: none !important;
+    }
+    .mobile-hamburger-btn {
+        display: inline-flex !important;
+    }
+}
+
 /* ── Utility: hidden ─────────────────────────────────────────────────── */
 .hidden {
     display: none !important;
