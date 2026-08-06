@@ -366,32 +366,46 @@ async function submitQuiz() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderResults(data) {
-    const { score, total, results } = data;
+    if (!data) return;
+    const score = data.score || 0;
+    const total = data.total || 0;
+    const results = Array.isArray(data.results) ? data.results : [];
 
     // Score display
     const percent = total > 0 ? Math.round((score / total) * 100) : 0;
     const scoreDisplay = document.getElementById("score-display");
-    scoreDisplay.textContent = `${score} / ${total}`;
-
-    // Color based on percentage
-    let scoreClass = "score-poor";
-    if (percent >= 80) scoreClass = "score-excellent";
-    else if (percent >= 60) scoreClass = "score-good";
-    else if (percent >= 40) scoreClass = "score-average";
-    scoreDisplay.className = `text-4xl font-bold m-0 ${scoreClass}`;
+    if (scoreDisplay) {
+        scoreDisplay.textContent = `${score} / ${total}`;
+        let scoreClass = "score-poor";
+        if (percent >= 80) scoreClass = "score-excellent";
+        else if (percent >= 60) scoreClass = "score-good";
+        else if (percent >= 40) scoreClass = "score-average";
+        scoreDisplay.className = `text-4xl font-bold m-0 ${scoreClass}`;
+    }
 
     const scorePercent = document.getElementById("score-percent");
-    scorePercent.textContent = `${percent}% correct`;
-    scorePercent.className = `text-sm mt-2 m-0 ${scoreClass}`;
+    if (scorePercent) {
+        let scoreClass = "score-poor";
+        if (percent >= 80) scoreClass = "score-excellent";
+        else if (percent >= 60) scoreClass = "score-good";
+        else if (percent >= 40) scoreClass = "score-average";
+        scorePercent.textContent = `${percent}% correct`;
+        scorePercent.className = `text-sm mt-2 m-0 ${scoreClass}`;
+    }
 
     // Render each result card
     const container = document.getElementById("results-container");
+    if (!container) return;
+
     container.innerHTML = results
         .map((r, idx) => {
-            const isCorrect = r.is_correct;
+            const isCorrect = !!r.is_correct;
             const cardClass = isCorrect ? "correct" : "incorrect";
             const statusText = isCorrect ? "Correct" : "Incorrect";
-            const exp = r.explanation || {};
+            let exp = r.explanation || {};
+            if (typeof exp === "string") {
+                try { exp = JSON.parse(exp); } catch (e) { exp = { reasoning: exp }; }
+            }
 
             return `
                 <div class="result-card ${cardClass}" id="result-${r.question_id}">

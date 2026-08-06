@@ -136,7 +136,14 @@ def get_attempt_by_id(attempt_id: str, user_id: str) -> Optional[Dict[str, Any]]
             res_body = response.read().decode("utf-8")
             results = json.loads(res_body)
             if isinstance(results, list) and len(results) > 0:
-                return results[0]
+                record = results[0]
+                for key in ["evaluation_results", "questions", "user_answers"]:
+                    if isinstance(record.get(key), str):
+                        try:
+                            record[key] = json.loads(record[key])
+                        except Exception:
+                            pass
+                return record
             return None
     except Exception as e:
         print(f"ERROR fetching attempt {attempt_id} from Supabase: {e}")
@@ -217,7 +224,13 @@ def get_shared_quiz(quiz_id: str) -> Optional[Dict[str, Any]]:
             res_body = response.read().decode("utf-8")
             results = json.loads(res_body)
             if isinstance(results, list) and len(results) > 0:
-                return results[0]
+                record = results[0]
+                if isinstance(record.get("questions"), str):
+                    try:
+                        record["questions"] = json.loads(record["questions"])
+                    except Exception:
+                        pass
+                return record
             return None
     except Exception as e:
         print(f"ERROR fetching shared quiz {quiz_id}: {e}")
@@ -363,7 +376,16 @@ def get_quiz_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, 
         )
         with urllib.request.urlopen(req) as response:
             res_body = response.read().decode("utf-8")
-            return json.loads(res_body)
+            results = json.loads(res_body)
+            if isinstance(results, list):
+                for r in results:
+                    for key in ["evaluation_results", "student_answers"]:
+                        if isinstance(r.get(key), str):
+                            try:
+                                r[key] = json.loads(r[key])
+                            except Exception:
+                                pass
+            return results
     except Exception as e:
         print(f"ERROR fetching student responses for quiz {quiz_id}: {e}")
         return []

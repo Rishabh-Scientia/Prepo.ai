@@ -88,11 +88,13 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
     language = state.get("language", "English")
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    # Use llama-3.1-8b-instant for 10x faster evaluation & explanation response time
+    model = os.getenv("GROQ_EVAL_MODEL", "llama-3.1-8b-instant")
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
-        temperature=0.4,
+        temperature=0.3,
+        max_tokens=2048,
     )
 
     prompt = build_explanation_prompt(scored, language)
