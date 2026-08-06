@@ -21,6 +21,7 @@ a {
 /* ── Page Transitions ────────────────────────────────────────────────── */
 .page {
     animation: fadeIn 0.2s ease-in;
+    flex: 1 0 auto;
 }
 
 @keyframes fadeIn {
