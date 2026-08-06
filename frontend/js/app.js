@@ -65,6 +65,16 @@ function navigateTo(page) {
         state.currentPage = page;
         window.scrollTo({ top: 0, behavior: "smooth" });
 
+        // Show footer ONLY on home page
+        const footer = document.getElementById("main-footer");
+        if (footer) {
+            if (page === "home") {
+                footer.classList.remove("hidden");
+            } else {
+                footer.classList.add("hidden");
+            }
+        }
+
         // Trigger profile loader if navigating to profile
         if (page === "profile") {
             loadUserProfile();
