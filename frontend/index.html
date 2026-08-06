@@ -80,7 +80,11 @@
                 <a id="nav-signin-btn" href="javascript:void(0)" onclick="navigateTo('signin')" class="text-xs sm:text-sm font-medium text-primary-600 border border-primary-600 hover:bg-primary-50 px-3 sm:px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Sign In</a>
 
                 <!-- Auth: User info (shown when logged in) -->
-                <div id="nav-user-info" class="nav-user-info hidden">
+                <div id="nav-user-info" class="nav-user-info hidden flex items-center gap-3">
+                    <div id="nav-credits-badge" class="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-card text-xs font-semibold">
+                        <span>⚡</span>
+                        <span id="nav-credits-count">3</span> Credits
+                    </div>
                     <button type="button" onclick="navigateTo('profile')" class="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-0 cursor-pointer p-0">
                         <div class="nav-user-avatar" id="nav-user-avatar">U</div>
                         <span class="nav-user-email hidden sm:inline" id="nav-user-email">User</span>
@@ -662,6 +666,24 @@
             </div>
             <div class="p-6 overflow-y-auto flex-1 space-y-3" id="responses-list-container">
                 <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ CREDIT LIMIT MODAL ═══ -->
+    <div id="credit-limit-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl border border-surface-200 max-w-md w-full mx-4 p-6 shadow-xl text-center">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                ⚡
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">You Have Reached Your Credit Limit</h3>
+            <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+                You have used all of your free credits.<br/>
+                Please contact <a href="mailto:yoursbench@gmail.com" class="text-primary-600 font-semibold underline hover:text-primary-700">yoursbench@gmail.com</a> for getting more credit.
+            </p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeCreditLimitModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-card text-sm transition-colors">Close</button>
+                <a href="mailto:yoursbench@gmail.com?subject=Request%20More%20Prepo.ai%20Credits" class="bg-primary-600 hover:bg-primary-700 text-white font-medium px-5 py-2 rounded-card text-sm no-underline inline-block transition-colors">Email Us</a>
             </div>
         </div>
     </div>

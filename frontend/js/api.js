@@ -253,5 +253,29 @@ const api = {
 
         return res.json();
     },
+
+    /**
+     * Fetch user remaining credits
+     * @returns {Promise<{ credits: number }>}
+     */
+    async getUserCredits() {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/user/credits`, {
+            method: "GET",
+            headers: headers,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to fetch user credits (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
 };
 

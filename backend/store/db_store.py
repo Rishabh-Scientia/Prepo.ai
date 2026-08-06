@@ -368,3 +368,81 @@ def get_quiz_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, 
         print(f"ERROR fetching student responses for quiz {quiz_id}: {e}")
         return []
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# USER CREDITS MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════
+
+def get_user_credits(user_id: str) -> int:
+    """
+    Get remaining credits for user_id.
+    If user has no record in user_credits table, lazy-initialize with 3 free credits.
+    """
+    if not _API_KEY or not user_id:
+        return 3
+
+    params = urllib.parse.urlencode({
+        "user_id": f"eq.{user_id}",
+        "select": "credits",
+    })
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits?{params}"
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            headers=_get_headers(),
+            method="GET",
+        )
+        with urllib.request.urlopen(req) as response:
+            res_body = response.read().decode("utf-8")
+            results = json.loads(res_body)
+            if isinstance(results, list) and len(results) > 0:
+                return results[0].get("credits", 3)
+
+        # User not found in user_credits -> initialize with 3 credits
+        init_endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits"
+        init_payload = {"user_id": user_id, "credits": 3}
+        init_bytes = json.dumps(init_payload).encode("utf-8")
+        headers = _get_headers()
+        headers["Prefer"] = "resolution=merge-duplicates"
+
+        init_req = urllib.request.Request(
+            init_endpoint,
+            data=init_bytes,
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(init_req) as response:
+            return 3
+    except Exception as e:
+        print(f"ERROR getting/initializing user credits for {user_id}: {e}")
+        return 3
+
+
+def deduct_user_credit(user_id: str) -> int:
+    """
+    Deduct 1 credit for user_id and return new credit count.
+    """
+    if not _API_KEY or not user_id:
+        return 3
+
+    current = get_user_credits(user_id)
+    new_credits = max(0, current - 1)
+
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits?user_id=eq.{user_id}"
+    payload = {"credits": new_credits}
+    try:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint,
+            data=data_bytes,
+            headers=_get_headers(),
+            method="PATCH",
+        )
+        with urllib.request.urlopen(req) as response:
+            return new_credits
+    except Exception as e:
+        print(f"ERROR deducting credit for {user_id}: {e}")
+        return new_credits
+
+

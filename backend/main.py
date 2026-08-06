@@ -36,6 +36,8 @@ from store.db_store import (
     submit_student_response,
     get_teacher_shared_quizzes,
     get_quiz_student_responses,
+    get_user_credits,
+    deduct_user_credit,
 )
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
@@ -82,6 +84,16 @@ def health_check():
     return {"status": "ok", "service": "prepo-ai"}
 
 
+@app.get("/api/user/credits")
+async def fetch_user_credits(user: dict = Depends(get_current_user)):
+    """
+    Get remaining free credits for current user.
+    """
+    user_id = user.get("user_id")
+    credits = get_user_credits(user_id)
+    return {"credits": credits}
+
+
 @app.post("/api/generate-quiz", response_model=GenerateQuizResponse)
 async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_current_user)):
     """
@@ -89,6 +101,15 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
     Returns questions WITHOUT correct answers.
     Stores the full quiz (with answers) server-side keyed by session_id.
     """
+    user_id = user.get("user_id")
+
+    # 1. Credit Check
+    credits = get_user_credits(user_id)
+    if credits <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Contact yoursbench@gmail.com for getting more credit.",
+        )
 
     # Run the generation graph
     result = generate_graph.invoke({
@@ -115,6 +136,9 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
         )
 
     quiz_data = result["quiz"]
+
+    # 2. Deduct 1 credit upon successful quiz generation
+    deduct_user_credit(user_id)
 
     # Generate session ID and store quiz server-side with config metadata
     session_id = str(uuid.uuid4())
@@ -280,6 +304,15 @@ async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="No questions found in this quiz.")
 
     user_id = user.get("user_id")
+
+    # Credit Check for sharing
+    credits = get_user_credits(user_id)
+    if credits <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Contact yoursbench@gmail.com for getting more credit.",
+        )
+
     email = user.get("email", "Teacher")
     teacher_name = email.split("@")[0] if "@" in email else "Teacher"
 

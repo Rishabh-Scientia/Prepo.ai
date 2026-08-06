@@ -175,10 +175,15 @@ const auth = {
             if (userAvatar) {
                 userAvatar.textContent = displayName.charAt(0).toUpperCase();
             }
+            if (typeof refreshUserCredits === "function") {
+                refreshUserCredits();
+            }
         } else {
             // Logged out
             if (signInBtn) signInBtn.classList.remove("hidden");
             if (userInfo) userInfo.classList.add("hidden");
+            const creditsBadge = document.getElementById("nav-credits-badge");
+            if (creditsBadge) creditsBadge.classList.add("hidden");
         }
     },
 };

@@ -21,6 +21,7 @@ const state = {
     studentName: "",
     pendingSharedQuizId: null,
     sharedQuizData: null,
+    userCredits: 3,
 };
 
 
@@ -134,6 +135,12 @@ function validateConfig() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function generateQuiz() {
+    // Check credits first
+    if (state.userCredits <= 0) {
+        showCreditLimitModal();
+        return;
+    }
+
     // Validate
     const errors = validateConfig();
     const errorEl = document.getElementById("config-error");
@@ -169,6 +176,9 @@ async function generateQuiz() {
         state.questions = data.questions;
         state.selectedAnswers = {};
         state.results = null;
+
+        // Refresh user credits
+        refreshUserCredits();
 
         renderQuizAttempt(config);
         navigateTo("attempt");
@@ -457,10 +467,54 @@ function toggleResult(questionId) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ERROR HANDLING
+// ERROR HANDLING & CREDIT LIMIT MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 
+function showCreditLimitModal() {
+    const modal = document.getElementById("credit-limit-modal");
+    if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+    }
+}
+
+function closeCreditLimitModal() {
+    const modal = document.getElementById("credit-limit-modal");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "";
+    }
+    if (state.currentPage === "loading") {
+        navigateTo("config");
+    }
+}
+
+async function refreshUserCredits() {
+    if (typeof auth === "undefined" || !auth || !auth.isLoggedIn()) {
+        const badge = document.getElementById("nav-credits-badge");
+        if (badge) badge.classList.add("hidden");
+        return;
+    }
+
+    try {
+        const data = await api.getUserCredits();
+        const countEl = document.getElementById("nav-credits-count");
+        const badge = document.getElementById("nav-credits-badge");
+        if (countEl) countEl.textContent = data.credits;
+        if (badge) badge.classList.remove("hidden");
+        state.userCredits = data.credits;
+    } catch (err) {
+        console.error("Error fetching credits:", err);
+    }
+}
+
 function showError(message) {
+    if (message && (message.includes("CREDIT_LIMIT_REACHED") || message.toLowerCase().includes("credit limit"))) {
+        closeErrorModal();
+        showCreditLimitModal();
+        return;
+    }
+
     document.getElementById("error-message").textContent = message;
     const modal = document.getElementById("error-modal");
     modal.classList.remove("hidden");
@@ -469,10 +523,14 @@ function showError(message) {
 
 function closeErrorModal() {
     const modal = document.getElementById("error-modal");
-    modal.classList.add("hidden");
-    modal.style.display = "";
-    // Go back to config page
-    navigateTo("config");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "";
+    }
+    // Go back to config page if on loading page
+    if (state.currentPage === "loading") {
+        navigateTo("config");
+    }
 }
 
 function retryLastAction() {
