@@ -162,24 +162,30 @@ const auth = {
         const userInfo = document.getElementById("nav-user-info");
         const userEmail = document.getElementById("nav-user-email");
         const userAvatar = document.getElementById("nav-user-avatar");
+        const desktopDashboardLink = document.getElementById("nav-dashboard-link");
 
+        const mobileHeaderUserBtn = document.getElementById("mobile-header-user-btn");
+        const mobileHeaderUserAvatar = document.getElementById("mobile-header-user-avatar");
         const mobileSignInBtn = document.getElementById("mobile-nav-signin-btn");
-        const mobileUserInfo = document.getElementById("mobile-nav-user-info");
-        const mobileUserName = document.getElementById("mobile-nav-user-name");
-        const mobileUserAvatar = document.getElementById("mobile-nav-user-avatar");
+        const mobileDashboardLink = document.getElementById("mobile-nav-dashboard-link");
+        const mobileSignOutBtn = document.getElementById("mobile-nav-signout-btn");
 
         if (auth._currentUser) {
             // Logged in
             if (signInBtn) signInBtn.classList.add("hidden");
             if (userInfo) userInfo.classList.remove("hidden");
+            if (desktopDashboardLink) desktopDashboardLink.classList.remove("hidden");
+
+            if (mobileHeaderUserBtn) mobileHeaderUserBtn.classList.remove("hidden");
             if (mobileSignInBtn) mobileSignInBtn.classList.add("hidden");
-            if (mobileUserInfo) mobileUserInfo.classList.remove("hidden");
+            if (mobileDashboardLink) mobileDashboardLink.classList.remove("hidden");
+            if (mobileSignOutBtn) mobileSignOutBtn.classList.remove("hidden");
             
             const displayName = auth.getDisplayName();
+            const initial = displayName.charAt(0).toUpperCase();
             if (userEmail) userEmail.textContent = displayName;
-            if (userAvatar) userAvatar.textContent = displayName.charAt(0).toUpperCase();
-            if (mobileUserName) mobileUserName.textContent = displayName;
-            if (mobileUserAvatar) mobileUserAvatar.textContent = displayName.charAt(0).toUpperCase();
+            if (userAvatar) userAvatar.textContent = initial;
+            if (mobileHeaderUserAvatar) mobileHeaderUserAvatar.textContent = initial;
 
             if (typeof refreshUserCredits === "function") {
                 refreshUserCredits();
@@ -188,8 +194,12 @@ const auth = {
             // Logged out
             if (signInBtn) signInBtn.classList.remove("hidden");
             if (userInfo) userInfo.classList.add("hidden");
+            if (desktopDashboardLink) desktopDashboardLink.classList.add("hidden");
+
+            if (mobileHeaderUserBtn) mobileHeaderUserBtn.classList.add("hidden");
             if (mobileSignInBtn) mobileSignInBtn.classList.remove("hidden");
-            if (mobileUserInfo) mobileUserInfo.classList.add("hidden");
+            if (mobileDashboardLink) mobileDashboardLink.classList.add("hidden");
+            if (mobileSignOutBtn) mobileSignOutBtn.classList.add("hidden");
 
             const creditsBadge = document.getElementById("nav-credits-badge");
             if (creditsBadge) creditsBadge.classList.add("hidden");

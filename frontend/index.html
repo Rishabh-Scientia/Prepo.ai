@@ -85,6 +85,7 @@
                 <!-- Desktop Navigation Links (Hidden on Mobile via CSS) -->
                 <div class="desktop-nav-items">
                     <a href="javascript:void(0)" onclick="navigateTo('home')" class="text-sm text-gray-600 hover:text-primary-600 transition-colors no-underline px-1.5 py-1">Home</a>
+                    <a id="nav-dashboard-link" href="javascript:void(0)" onclick="navigateTo('profile')" class="hidden text-sm text-gray-600 hover:text-primary-600 transition-colors no-underline px-1.5 py-1">My Dashboard</a>
                     <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Start Quiz</a>
 
                     <!-- Auth: Sign In button (shown when logged out) -->
@@ -92,7 +93,7 @@
 
                     <!-- Auth: User info (shown when logged in) -->
                     <div id="nav-user-info" class="nav-user-info hidden flex items-center gap-3">
-                        <button type="button" onclick="navigateTo('profile')" class="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-0 cursor-pointer p-0">
+                        <button type="button" onclick="navigateTo('profile')" class="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-0 cursor-pointer p-0" title="My Dashboard">
                             <div class="nav-user-avatar" id="nav-user-avatar">U</div>
                             <span class="nav-user-email hidden sm:inline" id="nav-user-email">User</span>
                         </button>
@@ -100,8 +101,13 @@
                     </div>
                 </div>
 
+                <!-- Mobile Header Logged-In User Avatar Button (Blue Circle, next to 3-lines menu) -->
+                <button id="mobile-header-user-btn" type="button" onclick="navigateTo('profile')" class="mobile-hamburger-btn hidden items-center justify-center p-0 bg-transparent border-0 cursor-pointer hover:opacity-80 transition-opacity shrink-0" title="My Dashboard">
+                    <div class="nav-user-avatar" id="mobile-header-user-avatar">U</div>
+                </button>
+
                 <!-- Mobile Hamburger Toggle Button (3 lines icon) -->
-                <button type="button" onclick="toggleMobileMenu()" class="mobile-hamburger-btn p-1.5 rounded-card text-gray-600 hover:text-gray-900 hover:bg-surface-100 transition-colors border border-surface-200 focus:outline-none" aria-label="Toggle Navigation Menu">
+                <button type="button" onclick="toggleMobileMenu()" class="mobile-hamburger-btn p-1.5 rounded-card text-gray-600 hover:text-gray-900 hover:bg-surface-100 transition-colors border border-surface-200 focus:outline-none shrink-0" aria-label="Toggle Navigation Menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -111,9 +117,12 @@
         </div>
 
         <!-- Mobile Navigation Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden border-t border-surface-200 bg-white px-4 py-3 space-y-2.5 shadow-lg">
+        <div id="mobile-menu" class="hidden md:hidden border-t border-surface-200 bg-white px-4 py-3 space-y-2 shadow-lg">
             <a href="javascript:void(0)" onclick="closeMobileMenu(); navigateTo('home')" class="block text-sm font-medium text-gray-700 hover:text-primary-600 py-1.5 border-b border-surface-100 no-underline">
                 🏠 Home
+            </a>
+            <a id="mobile-nav-dashboard-link" href="javascript:void(0)" onclick="closeMobileMenu(); navigateTo('profile')" class="hidden block text-sm font-medium text-gray-700 hover:text-primary-600 py-1.5 border-b border-surface-100 no-underline">
+                📊 My Dashboard
             </a>
             <a href="javascript:void(0)" onclick="closeMobileMenu(); navigateTo('config')" class="block text-sm font-medium text-primary-600 hover:text-primary-700 py-1.5 border-b border-surface-100 no-underline">
                 🚀 Start Quiz
@@ -124,19 +133,10 @@
                 Sign In / Register
             </a>
 
-            <!-- Mobile Auth: User Profile & Sign Out -->
-            <div id="mobile-nav-user-info" class="hidden space-y-2 pt-1">
-                <button type="button" onclick="closeMobileMenu(); navigateTo('profile')" class="w-full flex items-center justify-between text-left py-2 px-3 bg-surface-100 rounded-card border border-surface-200 text-sm font-medium text-gray-800 hover:bg-surface-200 transition-colors">
-                    <span class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold text-xs flex items-center justify-center" id="mobile-nav-user-avatar">U</span>
-                        <span id="mobile-nav-user-name">User</span>
-                    </span>
-                    <span class="text-xs text-primary-600">My Dashboard →</span>
-                </button>
-                <button type="button" onclick="closeMobileMenu(); handleSignOut()" class="w-full text-center text-xs font-semibold text-danger border border-red-200 bg-red-50 hover:bg-red-100 py-2 rounded-card transition-colors">
-                    Sign Out
-                </button>
-            </div>
+            <!-- Mobile Auth: Sign Out -->
+            <button id="mobile-nav-signout-btn" type="button" onclick="closeMobileMenu(); handleSignOut()" class="hidden w-full text-center text-xs font-semibold text-danger border border-red-200 bg-red-50 hover:bg-red-100 py-2 rounded-card transition-colors my-1">
+                Sign Out
+            </button>
         </div>
     </nav>
 
