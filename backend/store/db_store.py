@@ -358,7 +358,7 @@ def get_quiz_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, 
 
     # Verify teacher owns this quiz
     shared_quiz = get_shared_quiz(quiz_id)
-    if not shared_quiz or shared_quiz.get("created_by") != teacher_id:
+    if not shared_quiz or str(shared_quiz.get("created_by")) != str(teacher_id):
         return []
 
     params = urllib.parse.urlencode({
