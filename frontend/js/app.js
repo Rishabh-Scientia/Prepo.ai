@@ -847,7 +847,7 @@ async function loadUserProfileHistory() {
                                 ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <div class="border px-3 py-1 rounded-card text-center ${badgeClass}">
                                 <span class="text-sm font-bold block leading-tight">${att.score} / ${att.total}</span>
                                 <span class="text-[10px] font-medium opacity-80">${percent}%</span>
@@ -855,9 +855,20 @@ async function loadUserProfileHistory() {
                             <button
                                 type="button"
                                 onclick="viewPastResponse('${att.id}')"
-                                class="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0"
+                                class="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
                             >
                                 View Response
+                            </button>
+                            <button
+                                type="button"
+                                onclick="confirmDeleteAttempt('${att.id}', '${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}')"
+                                class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-transparent hover:border-red-200"
+                                title="Delete quiz attempt"
+                                aria-label="Delete quiz attempt"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -996,7 +1007,7 @@ async function loadTeacherSharedQuizzes() {
                                 ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <div class="bg-primary-50 border border-primary-200 text-primary-700 px-3 py-1 rounded-card text-center">
                                 <span class="text-sm font-bold block leading-tight">${q.submission_count || 0}</span>
                                 <span class="text-[10px] font-medium uppercase">Students</span>
@@ -1004,16 +1015,27 @@ async function loadTeacherSharedQuizzes() {
                             <button
                                 type="button"
                                 onclick="copyDirectShareUrl('${shareUrl}')"
-                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 text-xs font-medium px-3 py-2 rounded-card transition-colors shrink-0"
+                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 text-xs font-medium px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
                             >
                                 Copy Link
                             </button>
                             <button
                                 type="button"
                                 onclick="viewQuizLeaderboard('${q.id}')"
-                                class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0"
+                                class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
                             >
                                 View Responses
+                            </button>
+                            <button
+                                type="button"
+                                onclick="confirmDeleteSharedQuiz('${q.id}', '${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}')"
+                                class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-transparent hover:border-red-200"
+                                title="Delete shared quiz"
+                                aria-label="Delete shared quiz"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -1160,6 +1182,88 @@ function startStudentQuiz(event) {
     });
 
     navigateTo("attempt");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DELETE CONFIRMATION HANDLERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+let pendingDeleteAction = null;
+
+function openConfirmDeleteModal(title, description, onConfirm) {
+    const modal = document.getElementById("confirm-delete-modal");
+    const titleEl = document.getElementById("delete-modal-title");
+    const descEl = document.getElementById("delete-modal-desc");
+    const confirmBtn = document.getElementById("delete-modal-confirm-btn");
+
+    if (titleEl) titleEl.textContent = title;
+    if (descEl) descEl.textContent = description;
+
+    pendingDeleteAction = onConfirm;
+
+    if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+            if (typeof pendingDeleteAction === "function") {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = "Deleting...";
+                try {
+                    await pendingDeleteAction();
+                } finally {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = "Delete";
+                    closeConfirmDeleteModal();
+                }
+            }
+        };
+    }
+
+    if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+    }
+}
+
+function closeConfirmDeleteModal() {
+    const modal = document.getElementById("confirm-delete-modal");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "";
+    }
+    pendingDeleteAction = null;
+}
+
+function confirmDeleteAttempt(attemptId, quizTitle) {
+    openConfirmDeleteModal(
+        "Delete Quiz Attempt?",
+        `Are you sure you want to delete your past attempt for "${quizTitle}"? This cannot be undone.`,
+        async () => {
+            try {
+                await api.deleteUserAttempt(attemptId);
+                showToast("🗑️ Quiz attempt deleted successfully.");
+                loadUserProfileHistory();
+            } catch (err) {
+                console.error("Delete attempt error:", err);
+                showError(err.message || "Failed to delete quiz attempt.");
+            }
+        }
+    );
+}
+
+function confirmDeleteSharedQuiz(quizId, quizTitle) {
+    openConfirmDeleteModal(
+        "Delete Shared Quiz?",
+        `Are you sure you want to delete "${quizTitle}"? All student responses and leaderboard records for this quiz will also be removed.`,
+        async () => {
+            try {
+                await api.deleteSharedQuiz(quizId);
+                showToast("🗑️ Shared quiz deleted successfully.");
+                loadTeacherSharedQuizzes();
+            } catch (err) {
+                console.error("Delete shared quiz error:", err);
+                showError(err.message || "Failed to delete shared quiz.");
+            }
+        }
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

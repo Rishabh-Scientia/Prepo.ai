@@ -139,6 +139,31 @@ const api = {
     },
 
     /**
+     * Delete a specific past quiz attempt
+     * @param {string} attemptId
+     * @returns {Promise<{ success: boolean }>}
+     */
+    async deleteUserAttempt(attemptId) {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/user/attempts/${attemptId}`, {
+            method: "DELETE",
+            headers: headers,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to delete quiz attempt (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
      * Share a generated quiz session with students
      * @param {string} sessionId
      * @returns {Promise<{ shared_quiz_id: string }>}
@@ -249,6 +274,31 @@ const api = {
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || `Failed to fetch student responses (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
+     * Teacher: Delete a shared quiz and its responses
+     * @param {string} quizId
+     * @returns {Promise<{ success: boolean }>}
+     */
+    async deleteSharedQuiz(quizId) {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/teacher/shared-quizzes/${quizId}`, {
+            method: "DELETE",
+            headers: headers,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to delete shared quiz (HTTP ${res.status})`);
         }
 
         return res.json();

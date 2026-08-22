@@ -50,6 +50,8 @@ from store.db_store import (
     deduct_user_credit,
     add_user_credits,
     record_payment,
+    delete_user_attempt,
+    delete_shared_quiz,
 )
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
@@ -295,6 +297,19 @@ async def fetch_attempt_detail(attempt_id: str, user: dict = Depends(get_current
     return attempt
 
 
+@app.delete("/api/user/attempts/{attempt_id}")
+async def remove_user_attempt(attempt_id: str, user: dict = Depends(get_current_user)):
+    """
+    Delete a past quiz attempt for the authenticated user.
+    """
+    user_id = user.get("user_id")
+    success = delete_user_attempt(attempt_id, user_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete quiz attempt.")
+    return {"success": True, "message": "Quiz attempt deleted successfully."}
+
+
+
 # ── Shareable Quiz / Teacher Mode Routes ──────────────────────────────────────
 
 @app.post("/api/quiz/share")
@@ -423,6 +438,19 @@ async def get_shared_quiz_leaderboard(quiz_id: str, user: dict = Depends(get_cur
     user_id = user.get("user_id")
     responses = get_quiz_student_responses(quiz_id, user_id)
     return {"responses": responses}
+
+
+@app.delete("/api/teacher/shared-quizzes/{quiz_id}")
+async def remove_shared_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
+    """
+    Teacher endpoint: Delete a shared quiz and all its student responses.
+    """
+    user_id = user.get("user_id")
+    success = delete_shared_quiz(quiz_id, user_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete shared quiz.")
+    return {"success": True, "message": "Shared quiz and responses deleted successfully."}
+
 
 
 # ── Razorpay Payment Gateway & Credits Top-up ────────────────────────────────

@@ -150,6 +150,32 @@ def get_attempt_by_id(attempt_id: str, user_id: str) -> Optional[Dict[str, Any]]
         return None
 
 
+def delete_user_attempt(attempt_id: str, user_id: str) -> bool:
+    """
+    Delete a specific quiz attempt belonging to user_id.
+    """
+    if not _API_KEY or not attempt_id or not user_id:
+        return False
+
+    params = urllib.parse.urlencode({
+        "id": f"eq.{attempt_id}",
+        "user_id": f"eq.{user_id}",
+    })
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/quiz_attempts?{params}"
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            headers=_get_headers(),
+            method="DELETE",
+        )
+        with urllib.request.urlopen(req) as response:
+            return response.status in (200, 204)
+    except Exception as e:
+        print(f"ERROR deleting quiz attempt {attempt_id} for user {user_id}: {e}")
+        return False
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # SHARED QUIZZES & TEACHER DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════
@@ -389,6 +415,49 @@ def get_quiz_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, 
     except Exception as e:
         print(f"ERROR fetching student responses for quiz {quiz_id}: {e}")
         return []
+
+
+def delete_shared_quiz(quiz_id: str, teacher_id: str) -> bool:
+    """
+    Delete a shared quiz and its responses created by teacher_id.
+    """
+    if not _API_KEY or not quiz_id or not teacher_id:
+        return False
+
+    # 1. Delete associated student responses first
+    try:
+        resp_params = urllib.parse.urlencode({
+            "quiz_id": f"eq.{quiz_id}",
+        })
+        resp_endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/student_responses?{resp_params}"
+        resp_req = urllib.request.Request(
+            resp_endpoint,
+            headers=_get_headers(),
+            method="DELETE",
+        )
+        with urllib.request.urlopen(resp_req):
+            pass
+    except Exception as e:
+        print(f"Note deleting responses for shared quiz {quiz_id}: {e}")
+
+    # 2. Delete the shared quiz
+    params = urllib.parse.urlencode({
+        "id": f"eq.{quiz_id}",
+        "created_by": f"eq.{teacher_id}",
+    })
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{params}"
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            headers=_get_headers(),
+            method="DELETE",
+        )
+        with urllib.request.urlopen(req) as response:
+            return response.status in (200, 204)
+    except Exception as e:
+        print(f"ERROR deleting shared quiz {quiz_id} by teacher {teacher_id}: {e}")
+        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════
