@@ -1026,7 +1026,21 @@ function showError(message) {
         return;
     }
 
-    document.getElementById("error-message").textContent = message;
+    let displayMsg = message || "An unexpected error occurred. Please try again.";
+
+    // Intercept technical 413 / TPM / token / rate-limit JSON errors and show friendly message
+    if (
+        displayMsg.includes("413") ||
+        displayMsg.includes("Request too large") ||
+        displayMsg.includes("rate_limit_exceeded") ||
+        displayMsg.includes("tokens per minute") ||
+        displayMsg.includes("TPM") ||
+        (displayMsg.includes("Limit") && displayMsg.includes("Requested"))
+    ) {
+        displayMsg = "Document is too large. Please upload notes under 15–20 pages or a specific chapter.";
+    }
+
+    document.getElementById("error-message").textContent = displayMsg;
     const modal = document.getElementById("error-modal");
     modal.classList.remove("hidden");
     modal.style.display = "flex";

@@ -129,6 +129,15 @@ def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
             raw_output = "".join(str(chunk) for chunk in raw_output)
         return {**state, "raw_llm_output": str(raw_output)}
     except Exception as e:
+        err_str = str(e)
+        if "413" in err_str or "Request too large" in err_str or "rate_limit_exceeded" in err_str or "TPM" in err_str or "tokens" in err_str.lower():
+            friendly_msg = "Document is too large. Please upload notes under 15–20 pages or a specific chapter."
+            return {
+                **state,
+                "guardrail_rejected": True,
+                "guardrail_message": friendly_msg,
+                "error": friendly_msg,
+            }
         return {**state, "error": f"LLM generation failed: {str(e)}"}
 
 
