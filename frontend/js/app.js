@@ -285,7 +285,9 @@ async function generateQuiz() {
         navigateTo("attempt");
         saveSessionState();
     } catch (err) {
-        showError(err.message || "Failed to generate quiz. Please try again.");
+        console.error("Quiz generation error:", err);
+        navigateTo("config");
+        showError(err.message || "Failed to generate quiz. Please provide a valid subject and topic.");
     }
 }
 

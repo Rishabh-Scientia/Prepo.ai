@@ -36,6 +36,9 @@ class GenerateState(TypedDict):
     # Internal
     raw_llm_output: str
     retry_count: int
+    # Guardrail
+    guardrail_rejected: Optional[bool]
+    guardrail_message: Optional[str]
     # Outputs
     quiz: Optional[Dict[str, Any]]
     error: Optional[str]
@@ -43,16 +46,54 @@ class GenerateState(TypedDict):
 
 # ── Node Functions ───────────────────────────────────────────────────────────
 
+import re
+
+
+def is_likely_gibberish_topic(text: str) -> bool:
+    """
+    Layer-1 Heuristic Guardrail:
+    Detect keyboard smashing, random consonant strings, and non-words.
+    """
+    if not text or len(text.strip()) < 2:
+        return True
+
+    cleaned = text.strip().lower()
+    words = cleaned.split()
+
+    for word in words:
+        # If word is 5+ characters with 0 vowels and not digits
+        if len(word) >= 5 and not any(c in "aeiouy" for c in word) and not word.isdigit():
+            return True
+        # Check excessive consecutive consonants (>= 6 in a row)
+        consonant_count = 0
+        for char in word:
+            if char in "bcdfghjklmnpqrstvwxz":
+                consonant_count += 1
+                if consonant_count >= 6:
+                    return True
+            else:
+                consonant_count = 0
+        # Check same character repeated >= 4 times (e.g. "aaaa", "zzzz")
+        if re.search(r"(.)\1{3,}", word):
+            return True
+
+    return False
+
+
 def validate_input(state: GenerateState) -> GenerateState:
-    """Sanity-check incoming filters. Rejects with a clear error if invalid."""
+    """Sanity-check incoming filters and run Layer-1 Guardrail on subject/topic."""
 
     errors = []
 
-    if not state.get("class_level", "").strip():
+    subject = state.get("subject", "").strip()
+    chapter = state.get("chapter", "").strip()
+    class_level = state.get("class_level", "").strip()
+
+    if not class_level:
         errors.append("class_level is required")
-    if not state.get("subject", "").strip():
+    if not subject:
         errors.append("subject is required")
-    if not state.get("chapter", "").strip():
+    if not chapter:
         errors.append("chapter is required")
 
     num_q = state.get("num_questions", 0)
@@ -70,10 +111,20 @@ def validate_input(state: GenerateState) -> GenerateState:
     if errors:
         return {**state, "error": "; ".join(errors)}
 
+    # Layer-1 Heuristic Guardrail check for gibberish
+    if is_likely_gibberish_topic(subject):
+        msg = "The entered subject does not appear to be a valid educational subject. Please enter a real subject (e.g., Physics, History, Biology)."
+        return {**state, "error": msg, "guardrail_rejected": True, "guardrail_message": msg}
+
+    if is_likely_gibberish_topic(chapter):
+        msg = "The entered chapter/topic does not appear to be a valid topic. Please enter a meaningful topic (e.g., Thermodynamics, Data Structures, Indian History)."
+        return {**state, "error": msg, "guardrail_rejected": True, "guardrail_message": msg}
+
+    if is_likely_gibberish_topic(class_level):
+        msg = "Please enter a valid class or grade level."
+        return {**state, "error": msg, "guardrail_rejected": True, "guardrail_message": msg}
+
     return state
-
-
-import re
 
 
 def _extract_json_dict(raw: str) -> dict:
@@ -103,13 +154,13 @@ def _extract_json_dict(raw: str) -> dict:
 
 
 def generate_quiz(state: GenerateState) -> GenerateState:
-    """Call Groq (Llama 3.3 70B) to generate quiz questions."""
+    """Call Groq to generate quiz questions."""
 
-    if state.get("error"):
+    if state.get("error") or state.get("guardrail_rejected"):
         return state
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
@@ -147,9 +198,9 @@ def generate_quiz(state: GenerateState) -> GenerateState:
 
 
 def validate_quiz_json(state: GenerateState) -> GenerateState:
-    """Parse LLM output as JSON and validate against schema."""
+    """Parse LLM output as JSON, check Layer-2 Guardrail, and validate against schema."""
 
-    if state.get("error"):
+    if state.get("error") or state.get("guardrail_rejected"):
         return state
 
     raw = state.get("raw_llm_output", "")
@@ -167,6 +218,16 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
             }
         return {**state, "error": f"Failed to parse LLM output as JSON: {str(e)}"}
 
+    # Check Layer-2 Guardrail: Did LLM reject topic as nonsensical/invalid?
+    if parsed.get("status") in ("invalid_topic", "invalid_content") or ("error" in parsed and not parsed.get("questions")):
+        guardrail_msg = parsed.get("error") or "The entered subject/topic is not recognized as a valid academic topic. Please enter a real subject and chapter name."
+        return {
+            **state,
+            "guardrail_rejected": True,
+            "guardrail_message": guardrail_msg,
+            "error": guardrail_msg,
+            "quiz": None,
+        }
 
     # Validate structure
     if "questions" not in parsed:
