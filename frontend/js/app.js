@@ -572,6 +572,164 @@ function renderQuizAttempt(config) {
     updateAnsweredCount();
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ PDF EXPORT (QUESTION PAPER ONLY — NO ANSWERS)
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function downloadQuizPdf() {
+    if (!state.questions || state.questions.length === 0) {
+        showError("No active quiz questions found to download.");
+        return;
+    }
+
+    const config = state.activeQuizConfig || {
+        subject: document.getElementById("attempt-title")?.textContent || "Practice Quiz",
+        chapter: "",
+        class_level: "",
+        difficulty: "Medium",
+        language: "English",
+        num_questions: state.questions.length,
+    };
+
+    const title = config.chapter ? `${config.subject} — ${config.chapter}` : config.subject;
+    const dateStr = new Date().toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
+
+    const letters = ["A", "B", "C", "D"];
+
+    // Build printable HTML element
+    const pdfContainer = document.createElement("div");
+    pdfContainer.id = "pdf-export-container";
+    pdfContainer.style.fontFamily = "system-ui, -apple-system, sans-serif";
+    pdfContainer.style.color = "#111827";
+    pdfContainer.style.padding = "20px 24px";
+    pdfContainer.style.background = "#ffffff";
+    pdfContainer.style.maxWidth = "800px";
+    pdfContainer.style.margin = "0 auto";
+
+    pdfContainer.innerHTML = `
+        <!-- PDF Header -->
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="font-size: 20px; font-weight: 800; color: #2563eb; letter-spacing: -0.5px;">
+                    Prepo<span style="color: #1e293b;">.ai</span>
+                </div>
+                <div style="font-size: 11px; color: #6b7280; font-weight: 500;">
+                    Date: ${dateStr}
+                </div>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 4px;">
+                ${escapeHtml(title)}
+            </div>
+            <div style="font-size: 11px; color: #4b5563; display: flex; gap: 12px; flex-wrap: wrap;">
+                ${config.class_level ? `<span><strong>Level:</strong> ${escapeHtml(config.class_level)}</span>` : ""}
+                ${config.difficulty ? `<span><strong>Difficulty:</strong> ${escapeHtml(config.difficulty)}</span>` : ""}
+                <span><strong>Total Questions:</strong> ${state.questions.length}</span>
+                ${config.language ? `<span><strong>Language:</strong> ${escapeHtml(config.language)}</span>` : ""}
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 18px; font-size: 11px; color: #475569;">
+            <strong>Instructions:</strong> Read each question carefully and mark the correct option (A, B, C, or D).
+        </div>
+
+        <!-- Questions List (Clean Practice Exam Paper) -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            ${state.questions
+                .map(
+                    (q, idx) => `
+                <div style="page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 14px; background: #ffffff;">
+                    <div style="font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 8px; line-height: 1.4;">
+                        <span style="color: #2563eb; font-weight: 700; margin-right: 4px;">Q${idx + 1}.</span> ${escapeHtml(q.question)}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        ${(q.options || [])
+                            .map(
+                                (opt, oi) => `
+                            <div style="font-size: 11px; color: #374151; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fafafa; display: flex; align-items: flex-start; gap: 6px;">
+                                <span style="font-weight: 700; color: #4b5563; min-width: 18px;">(${letters[oi]})</span>
+                                <span style="line-height: 1.3;">${escapeHtml(opt)}</span>
+                            </div>
+                        `
+                            )
+                            .join("")}
+                    </div>
+                </div>
+            `
+                )
+                .join("")}
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 24px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 10px; color: #9ca3af;">
+            Generated via Prepo.ai — AI Powered Practice & Learning Platform
+        </div>
+    `;
+
+    // Download button feedback
+    const btn = document.getElementById("download-pdf-btn");
+    const originalText = btn ? btn.innerHTML : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳</span> <span>Downloading...</span>`;
+    }
+
+    try {
+        if (typeof html2pdf !== "undefined") {
+            const cleanFileName = (title || "Prepo_Quiz").replace(/[^a-zA-Z0-9_-]/g, "_") + ".pdf";
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: cleanFileName,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+                pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+            };
+
+            await html2pdf().set(opt).from(pdfContainer).save();
+            showToast("📥 PDF downloaded successfully!");
+        } else {
+            // Fallback to printable window
+            const printWin = window.open("", "_blank");
+            if (printWin) {
+                printWin.document.write(`
+                    <html>
+                        <head>
+                            <title>${escapeHtml(title)} - Prepo.ai</title>
+                            <style>
+                                body { font-family: system-ui, sans-serif; margin: 20px; color: #111827; }
+                                @media print { body { margin: 0; } }
+                            </style>
+                        </head>
+                        <body>
+                            ${pdfContainer.innerHTML}
+                            <script>
+                                window.onload = function() { window.print(); window.close(); }
+                            <\/script>
+                        </body>
+                    </html>
+                `);
+                printWin.document.close();
+            } else {
+                throw new Error("Popup blocked by browser.");
+            }
+        }
+    } catch (err) {
+        console.error("PDF export error:", err);
+        showError("Failed to generate PDF. Please try again or allow popups.");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+
 function selectOption(questionId, optionIndex) {
     const question = state.questions.find((q) => q.id === questionId);
     if (!question) return;

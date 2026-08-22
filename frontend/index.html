@@ -18,6 +18,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Razorpay Standard Checkout SDK -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- html2pdf for instant client-side quiz PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -746,11 +748,20 @@
                             <h1 class="text-base font-semibold text-gray-900 m-0 truncate" id="attempt-title">Quiz</h1>
                             <p class="text-xs sm:text-sm text-gray-500 m-0 mt-0.5 leading-snug break-words" id="attempt-meta"></p>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                            <button
+                                type="button"
+                                id="download-pdf-btn"
+                                onclick="downloadQuizPdf()"
+                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 font-medium px-3 py-1.5 rounded-card transition-colors text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                title="Download this question paper as a clean PDF"
+                            >
+                                <span>📥</span> <span>Download PDF</span>
+                            </button>
                             <button
                                 type="button"
                                 onclick="shareCurrentQuiz()"
-                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 font-medium px-3 py-1.5 rounded-card transition-colors text-xs flex items-center gap-1.5"
+                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 font-medium px-3 py-1.5 rounded-card transition-colors text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
                                 title="Share this quiz with your students via link"
                             >
                                 <span>🔗</span> <span>Share Quiz</span>
@@ -758,7 +769,7 @@
                             <button
                                 id="submit-quiz-btn-top"
                                 onclick="submitQuiz()"
-                                class="bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-card transition-colors text-sm"
+                                class="bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs"
                             >
                                 Submit Quiz
                             </button>
