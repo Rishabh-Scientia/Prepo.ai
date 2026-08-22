@@ -98,6 +98,15 @@ const auth = {
     },
 
     /**
+     * Get current access token directly
+     * @returns {Promise<string|null>}
+     */
+    async getToken() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        return session ? session.access_token : null;
+    },
+
+    /**
      * Get the current user synchronously from local state
      * @returns {object|null}
      */

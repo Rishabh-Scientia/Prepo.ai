@@ -78,8 +78,37 @@ def evaluate_answers(state: EvaluateState) -> EvaluateState:
     }
 
 
+import re
+
+
+def _extract_json_dict(raw: str) -> dict:
+    """Robustly extract and parse JSON object from LLM response."""
+    if not raw or not raw.strip():
+        raise ValueError("Empty response received from LLM")
+
+    text = raw.strip()
+
+    # 1. Strip markdown fences if present
+    cleaned = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        pass
+
+    # 2. Extract substring between outermost { and }
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start : end + 1]
+        return json.loads(candidate)
+
+    raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
+
+
 def generate_explanations(state: EvaluateState) -> EvaluateState:
-    """Call Groq (Llama 3.3 70B) to generate 4-part explanations for all questions."""
+    """Call Groq to generate 4-part explanations for all questions."""
 
     if state.get("error"):
         return state
@@ -88,30 +117,25 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
     language = state.get("language", "English")
 
     api_key = os.getenv("GROQ_API_KEY")
-    # Use llama-3.1-8b-instant for 10x faster evaluation & explanation response time
-    model = os.getenv("GROQ_EVAL_MODEL", "llama-3.1-8b-instant")
+    model = os.getenv("GROQ_EVAL_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
         temperature=0.3,
         max_tokens=2048,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
 
     prompt = build_explanation_prompt(scored, language)
 
     try:
         response = llm.invoke(prompt)
-        raw = response.content.strip()
+        raw = response.content
+        if isinstance(raw, list):
+            raw = "".join(str(chunk) for chunk in raw)
+        raw = str(raw).strip()
 
-        # Strip markdown fences if present
-        if raw.startswith("```"):
-            first_newline = raw.index("\n")
-            raw = raw[first_newline + 1:]
-        if raw.endswith("```"):
-            raw = raw[:-3]
-        raw = raw.strip()
-
-        parsed = json.loads(raw)
+        parsed = _extract_json_dict(raw)
         explanations_map = parsed.get("explanations", {})
 
     except Exception as e:
@@ -124,6 +148,7 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
                 "reasoning": "Please review the correct answer and try to understand the concept.",
                 "why_incorrect_option_wrong": "Explanation unavailable due to a temporary error.",
             }
+
 
     # Merge explanations into scored results
     for item in scored:

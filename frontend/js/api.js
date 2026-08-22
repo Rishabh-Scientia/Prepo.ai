@@ -65,11 +65,13 @@ const api = {
      * @returns {Promise<{ session_id: string, questions: Array }>}
      */
     async generateQuizFromDoc(formData) {
-        const token = await auth.getToken();
-        const headers = {};
-        if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
+        const { accessToken } = await auth.getSession();
+        if (!accessToken) {
+            throw new Error("You must be signed in to perform this action. Please sign in and try again.");
         }
+        const headers = {
+            "Authorization": `Bearer ${accessToken}`,
+        };
         // Note: Do NOT set Content-Type header when sending FormData; browser handles boundary automatically
 
         const res = await fetch(`${API_BASE}/api/generate-quiz-from-doc`, {

@@ -66,17 +66,44 @@ def validate_doc_input(state: GenerateDocState) -> GenerateDocState:
     return state
 
 
+def _extract_json_dict(raw: str) -> dict:
+    """Robustly extract and parse JSON object from LLM response."""
+    if not raw or not raw.strip():
+        raise ValueError("Empty response received from LLM")
+
+    text = raw.strip()
+
+    # 1. Strip markdown fences if present
+    cleaned = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        pass
+
+    # 2. Extract substring between outermost { and }
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start : end + 1]
+        return json.loads(candidate)
+
+    raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
+
+
 def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
-    """Invoke Groq (Llama 3.3 70B) to generate quiz based on document text."""
+    """Invoke Groq to generate quiz based on document text."""
     if state.get("error") or state.get("guardrail_rejected"):
         return state
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
         temperature=0.4,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
 
     clean_text = truncate_document_text(state["document_text"])
@@ -97,8 +124,10 @@ def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
 
     try:
         response = llm.invoke(prompt)
-        raw_output = response.content.strip()
-        return {**state, "raw_llm_output": raw_output}
+        raw_output = response.content
+        if isinstance(raw_output, list):
+            raw_output = "".join(str(chunk) for chunk in raw_output)
+        return {**state, "raw_llm_output": str(raw_output)}
     except Exception as e:
         return {**state, "error": f"LLM generation failed: {str(e)}"}
 
@@ -110,20 +139,15 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
 
     raw = state.get("raw_llm_output", "").strip()
 
-    # Strip markdown fences if present
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-    raw = raw.strip()
-
     try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as e:
+        data = _extract_json_dict(raw)
+    except Exception as e:
         return {
             **state,
             "error": f"Invalid JSON returned by LLM: {str(e)}",
             "quiz": None,
         }
+
 
     # Check Layer-2 Guardrail: Did LLM reject document as non-educational/unsuitable?
     if data.get("status") == "invalid_content" or "error" in data and not data.get("questions"):

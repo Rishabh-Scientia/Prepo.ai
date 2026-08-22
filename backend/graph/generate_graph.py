@@ -73,6 +73,35 @@ def validate_input(state: GenerateState) -> GenerateState:
     return state
 
 
+import re
+
+
+def _extract_json_dict(raw: str) -> dict:
+    """Robustly extract and parse JSON object from LLM response."""
+    if not raw or not raw.strip():
+        raise ValueError("Empty response received from LLM")
+
+    text = raw.strip()
+
+    # 1. Strip markdown fences if present
+    cleaned = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        pass
+
+    # 2. Extract substring between outermost { and }
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start : end + 1]
+        return json.loads(candidate)
+
+    raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
+
+
 def generate_quiz(state: GenerateState) -> GenerateState:
     """Call Groq (Llama 3.3 70B) to generate quiz questions."""
 
@@ -84,7 +113,8 @@ def generate_quiz(state: GenerateState) -> GenerateState:
     llm = ChatGroq(
         model=model,
         groq_api_key=api_key,
-        temperature=0.7,
+        temperature=0.4,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
 
     # On retry, add a stricter instruction
@@ -108,10 +138,12 @@ def generate_quiz(state: GenerateState) -> GenerateState:
     try:
         response = llm.invoke(prompt)
         raw_output = response.content
+        if isinstance(raw_output, list):
+            raw_output = "".join(str(chunk) for chunk in raw_output)
     except Exception as e:
         return {**state, "error": f"LLM call failed: {str(e)}"}
 
-    return {**state, "raw_llm_output": raw_output}
+    return {**state, "raw_llm_output": str(raw_output)}
 
 
 def validate_quiz_json(state: GenerateState) -> GenerateState:
@@ -122,19 +154,9 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
 
     raw = state.get("raw_llm_output", "")
 
-    # Strip markdown fences if present
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        # Remove opening fence
-        first_newline = cleaned.index("\n")
-        cleaned = cleaned[first_newline + 1:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    cleaned = cleaned.strip()
-
     try:
-        parsed = json.loads(cleaned)
-    except json.JSONDecodeError as e:
+        parsed = _extract_json_dict(raw)
+    except Exception as e:
         retry_count = state.get("retry_count", 0)
         if retry_count < 1:
             return {
@@ -143,7 +165,8 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
                 "quiz": None,
                 "raw_llm_output": "",
             }
-        return {**state, "error": f"Failed to parse LLM output as JSON after retry: {str(e)}"}
+        return {**state, "error": f"Failed to parse LLM output as JSON: {str(e)}"}
+
 
     # Validate structure
     if "questions" not in parsed:
