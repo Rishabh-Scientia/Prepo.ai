@@ -3,8 +3,27 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prepo.ai — AI Practice Quizzes for Any Subject</title>
-    <meta name="description" content="AI-generated practice quizzes for any class, subject, and chapter. Instant scoring with step-by-step explanations." />
+    <title>Prepo.ai — AI Practice & Mock Tests for Any Subject</title>
+    <meta name="description" content="AI-generated practice tests and mock assessments for any class, subject, and chapter. Upload notes or choose topics for instant scoring and step-by-step solutions." />
+    <meta name="keywords" content="AI practice test, online mock test, AI quiz generator, PDF to mock test, CBSE practice test, JEE mock test, NEET practice tests, Class 10 mock test, Class 12 test series, BTech exam preparation, GATE mock test, AI test generator for teachers, question paper maker, Prepo.ai, Your Bench" />
+    <meta name="author" content="Prepo.ai (Your Bench)" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Social Sharing Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://prepo-ai-fojm.onrender.com" />
+    <meta property="og:title" content="Prepo.ai — AI Practice & Mock Tests for Any Subject" />
+    <meta property="og:description" content="Generate instant AI-powered mock tests tailored to your syllabus or study notes (PDF/Doc) with detailed explanations for every answer." />
+    <meta property="og:image" content="/assets/favicon.png" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Prepo.ai — AI Practice & Mock Tests" />
+    <meta name="twitter:description" content="Generate instant AI practice tests from topics or study notes with step-by-step explanations." />
+    <meta name="twitter:image" content="/assets/favicon.png" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2e73b8" />
 
     <!-- Favicon -->
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
@@ -91,7 +110,7 @@
                 <div class="desktop-nav-items">
                     <a href="javascript:void(0)" onclick="navigateTo('home')" class="text-sm text-gray-600 hover:text-primary-600 transition-colors no-underline px-1.5 py-1">Home</a>
                     <a id="nav-dashboard-link" href="javascript:void(0)" onclick="navigateTo('profile')" class="hidden text-sm text-gray-600 hover:text-primary-600 transition-colors no-underline px-1.5 py-1">My Dashboard</a>
-                    <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Start Quiz</a>
+                    <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Start Test</a>
 
                     <!-- Auth: Sign In button (shown when logged out) -->
                     <a id="nav-signin-btn" href="javascript:void(0)" onclick="navigateTo('signin')" class="text-sm font-medium text-primary-600 border border-primary-600 hover:bg-primary-50 px-4 py-1.5 rounded-card transition-colors no-underline shrink-0">Sign In</a>
@@ -133,7 +152,7 @@
                 ⚡ Buy Credits (From ₹9)
             </a>
             <a href="javascript:void(0)" onclick="closeMobileMenu(); navigateTo('config')" class="block text-sm font-medium text-primary-600 hover:text-primary-700 py-1.5 border-b border-surface-100 no-underline">
-                🚀 Start Quiz
+                🚀 Start Test
             </a>
 
             <!-- Mobile Auth: Sign In -->
@@ -154,13 +173,13 @@
             <!-- Hero -->
             <div class="text-center mb-12">
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-                    Practice Smarter with AI-Generated Quizzes
+                    Practice Smarter with AI-Generated Mock Tests
                 </h1>
                 <p class="text-lg text-gray-500 max-w-2xl mx-auto mb-8">
-                    Select your topic or upload your study notes (PDF/Doc) — get instant AI-generated quizzes with detailed explanations for every answer. Works for Class 1st–12th, B.Tech, and competitive exams.
+                    Select your topic or upload your study notes (PDF/Doc) — get instant AI-generated mock tests with detailed explanations for every answer. Works for Class 1st–12th, B.Tech, and competitive exams.
                 </p>
                 <button onclick="navigateTo('config')" class="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-8 py-3 rounded-card transition-colors text-base">
-                    Start a Quiz →
+                    Start Practice Test →
                 </button>
             </div>
 
@@ -218,7 +237,7 @@
                         </a>
 
                         <p class="text-sm text-gray-600 leading-relaxed m-0 max-w-sm">
-                            Practice Smarter with AI-Generated Quizzes. Instant scoring, step-by-step explanations, and customizable assessments for any subject or grade level.
+                            Practice Smarter with AI-Generated Mock Tests. Instant scoring, step-by-step explanations, and customizable assessments for any subject or grade level.
                         </p>
                     </div>
 
@@ -230,7 +249,7 @@
                                 <a href="javascript:void(0)" onclick="navigateTo('home')" class="text-gray-600 hover:text-primary-600 transition-colors inline-block no-underline">Home</a>
                             </li>
                             <li>
-                                <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-gray-600 hover:text-primary-600 transition-colors inline-block no-underline">Start Quiz</a>
+                                <a href="javascript:void(0)" onclick="navigateTo('config')" class="text-gray-600 hover:text-primary-600 transition-colors inline-block no-underline">Start Test</a>
                             </li>
                             <li>
                                 <a href="javascript:void(0)" onclick="navigateTo('signin')" class="text-gray-600 hover:text-primary-600 transition-colors inline-block no-underline">Sign In / Register</a>
@@ -425,7 +444,7 @@
                 </div>
                 <div class="bg-surface-100 border border-surface-200 rounded-card px-4 py-2 text-center shrink-0">
                     <span class="block text-2xl font-bold text-primary-600" id="profile-total-attempts">0</span>
-                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Quizzes Attempted</span>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Tests Attempted</span>
                 </div>
             </div>
 
@@ -434,14 +453,14 @@
                 <div class="px-5 py-3 border-b border-surface-200 bg-surface-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
                         <button id="tab-btn-history" onclick="switchProfileTab('history')" class="text-sm font-semibold px-3 py-1.5 rounded-card bg-primary-600 text-white transition-colors">
-                            My Quiz History
+                            My Test History
                         </button>
                         <button id="tab-btn-teacher" onclick="switchProfileTab('teacher')" class="text-sm font-semibold px-3 py-1.5 rounded-card bg-surface-200 text-gray-700 hover:bg-surface-300 transition-colors">
-                            Shared Quizzes (Teacher)
+                            Shared Tests (Teacher)
                         </button>
                     </div>
                     <button onclick="navigateTo('config')" class="text-xs font-semibold text-primary-600 hover:text-primary-700 self-end sm:self-auto">
-                        + Take New Quiz
+                        + Take New Test
                     </button>
                 </div>
                 <div class="p-5 space-y-4" id="profile-attempts-container">
@@ -458,8 +477,8 @@
                 <!-- Header with Mode Switcher Tabs -->
                 <div class="px-5 py-4 border-b border-surface-200 bg-surface-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h1 class="text-lg font-semibold text-gray-900 m-0">Create Practice Quiz</h1>
-                        <p class="text-xs text-gray-500 m-0 mt-0.5">Generate instant AI assessments tailored to your syllabus or notes.</p>
+                        <h1 class="text-lg font-semibold text-gray-900 m-0">Create Practice Test</h1>
+                        <p class="text-xs text-gray-500 m-0 mt-0.5">Generate instant AI practice tests tailored to your syllabus or notes.</p>
                     </div>
                     <!-- Mode Switcher -->
                     <div class="flex items-center bg-white p-1 rounded-card border border-surface-200 shadow-xs self-start sm:self-auto">
@@ -592,7 +611,7 @@
                             onclick="generateQuiz()"
                             class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs flex items-center justify-center gap-2"
                         >
-                            <span>🚀 Generate Quiz</span>
+                            <span>🚀 Generate Practice Test</span>
                             <span class="text-xs bg-primary-700 px-2 py-0.5 rounded-full font-normal">1 Credit</span>
                         </button>
                         <p id="config-error" class="text-sm text-danger mt-2 hidden"></p>
@@ -704,7 +723,7 @@
                             onclick="generateDocQuiz()"
                             class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs flex items-center justify-center gap-2"
                         >
-                            <span>🚀 Generate Quiz from Document</span>
+                            <span>🚀 Generate Test from Document</span>
                             <span class="text-xs bg-primary-700 px-2 py-0.5 rounded-full font-normal">1 Credit</span>
                         </button>
                         <p id="doc-config-error" class="text-sm text-danger mt-2 hidden"></p>
@@ -718,7 +737,7 @@
     <section id="page-loading" class="page hidden">
         <div class="max-w-md mx-auto px-4 py-24 text-center">
             <div class="spinner mx-auto mb-5"></div>
-            <h2 class="text-lg font-semibold text-gray-800 mb-2" id="loading-title">Generating your quiz...</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-2" id="loading-title">Generating your test...</h2>
             <p class="text-sm text-gray-500" id="loading-subtitle">This may take 10–20 seconds depending on the number of questions.</p>
         </div>
     </section>
@@ -745,7 +764,7 @@
                 <main class="w-full flex-1 min-w-0">
                     <div class="border border-surface-200 rounded-card bg-white mb-4 p-4 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <h1 class="text-base font-semibold text-gray-900 m-0 truncate" id="attempt-title">Quiz</h1>
+                            <h1 class="text-base font-semibold text-gray-900 m-0 truncate" id="attempt-title">Practice Test</h1>
                             <p class="text-xs sm:text-sm text-gray-500 m-0 mt-0.5 leading-snug break-words" id="attempt-meta"></p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0 flex-wrap">
@@ -762,16 +781,16 @@
                                 type="button"
                                 onclick="shareCurrentQuiz()"
                                 class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 font-medium px-3 py-1.5 rounded-card transition-colors text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                title="Share this quiz with your students via link"
+                                title="Share this test with your students via link"
                             >
-                                <span>🔗</span> <span>Share Quiz</span>
+                                <span>🔗</span> <span>Share Test</span>
                             </button>
                             <button
                                 id="submit-quiz-btn-top"
                                 onclick="submitQuiz()"
                                 class="bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs"
                             >
-                                Submit Quiz
+                                Submit Test
                             </button>
                         </div>
                     </div>
@@ -788,7 +807,7 @@
                             onclick="submitQuiz()"
                             class="shrink-0 bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold px-5 sm:px-6 py-2 rounded-card transition-colors text-sm"
                         >
-                            Submit Quiz
+                            Submit Test
                         </button>
                     </div>
                 </main>
@@ -809,10 +828,10 @@
                 </div>
                 <div class="px-5 py-3 border-t border-surface-200 bg-surface-100 flex items-center justify-center gap-4">
                     <button onclick="shareCurrentQuiz()" class="text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors flex items-center gap-1">
-                        <span>🔗</span> Share Quiz
+                        <span>🔗</span> Share Test
                     </button>
                     <span class="text-surface-300">|</span>
-                    <button onclick="navigateTo('config')" class="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">Take Another Quiz</button>
+                    <button onclick="navigateTo('config')" class="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">Take Another Test</button>
                 </div>
             </div>
 
@@ -827,10 +846,10 @@
     <div id="share-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40">
         <div class="bg-white rounded-card border border-surface-200 max-w-md w-full mx-4 p-6">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-base font-semibold text-gray-900 m-0">🔗 Share Quiz with Students</h3>
+                <h3 class="text-base font-semibold text-gray-900 m-0">🔗 Share Test with Students</h3>
                 <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600 text-lg font-bold">×</button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Anyone with this link can attempt the quiz. Student responses will be saved in your Teacher Dashboard.</p>
+            <p class="text-sm text-gray-600 mb-4">Anyone with this link can attempt the test. Student responses will be saved in your Teacher Dashboard.</p>
             <div class="flex gap-2 mb-4">
                 <input type="text" id="share-url-input" class="form-input text-xs select-all" readonly />
                 <button onclick="copyShareUrl()" id="copy-share-btn" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors shrink-0">
@@ -914,7 +933,7 @@
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-1">Top Up Your Credits</h3>
                 <p class="text-sm text-gray-500 max-w-md mx-auto">
-                    Power your study with instant AI practice quizzes, detailed derivations, and smart explanations.
+                    Power your study with instant AI practice tests, detailed derivations, and smart explanations.
                 </p>
                 <div class="mt-3 inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">
                     <span>Current Balance:</span>
@@ -936,12 +955,12 @@
                                 <span class="text-3xl font-extrabold text-gray-900">₹9</span>
                                 <span class="text-xs text-gray-500 font-medium">one-time</span>
                             </div>
-                            <p class="text-xs font-semibold text-primary-600 mt-0.5">⚡ 30 Credits (~₹0.30/quiz)</p>
+                            <p class="text-xs font-semibold text-primary-600 mt-0.5">⚡ 30 Credits (~₹0.30/test)</p>
                         </div>
                         <ul class="space-y-2.5 text-xs text-gray-600 mb-6">
                             <li class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                <span><strong>30 Quizzes</strong> with AI generation</span>
+                                <span><strong>30 Tests</strong> with AI generation</span>
                             </li>
                             <li class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
@@ -974,12 +993,12 @@
                                 <span class="text-3xl font-extrabold text-gray-900">₹29</span>
                                 <span class="text-xs text-gray-500 font-medium">one-time</span>
                             </div>
-                            <p class="text-xs font-semibold text-emerald-600 mt-0.5">⚡ 100 Credits (~₹0.29/quiz - Save 70%)</p>
+                            <p class="text-xs font-semibold text-emerald-600 mt-0.5">⚡ 100 Credits (~₹0.29/test - Save 70%)</p>
                         </div>
                         <ul class="space-y-2.5 text-xs text-gray-600 mb-6">
                             <li class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                <span><strong>100 Quizzes</strong> with AI generation</span>
+                                <span><strong>100 Tests</strong> with AI generation</span>
                             </li>
                             <li class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
@@ -1021,7 +1040,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
             </div>
-            <h3 class="text-base font-bold text-gray-900 mb-1" id="delete-modal-title">Delete Quiz?</h3>
+            <h3 class="text-base font-bold text-gray-900 mb-1" id="delete-modal-title">Delete Test?</h3>
             <p class="text-xs text-gray-500 mb-5 leading-relaxed" id="delete-modal-desc">
                 Are you sure you want to delete this? This action cannot be undone.
             </p>

@@ -265,7 +265,7 @@ async function generateQuiz() {
     // Show loading
     state.lastAction = () => generateQuiz();
     navigateTo("loading");
-    document.getElementById("loading-title").textContent = "Generating your quiz...";
+    document.getElementById("loading-title").textContent = "Generating your practice test...";
     document.getElementById("loading-subtitle").textContent =
         `Creating ${config.num_questions} ${config.difficulty.toLowerCase()} questions on ${config.subject} — ${config.chapter}`;
 
@@ -287,7 +287,7 @@ async function generateQuiz() {
     } catch (err) {
         console.error("Quiz generation error:", err);
         navigateTo("config");
-        showError(err.message || "Failed to generate quiz. Please provide a valid subject and topic.");
+        showError(err.message || "Failed to generate practice test. Please provide a valid subject and topic.");
     }
 }
 
@@ -433,7 +433,7 @@ async function generateDocQuiz() {
     // Show loading screen
     state.lastAction = () => generateDocQuiz();
     navigateTo("loading");
-    document.getElementById("loading-title").textContent = "Analyzing document & generating quiz...";
+    document.getElementById("loading-title").textContent = "Analyzing document & generating test...";
     document.getElementById("loading-subtitle").textContent =
         `Creating ${numQuestions} ${difficulty.toLowerCase()} questions grounded strictly in ${file.name}`;
 
@@ -442,7 +442,7 @@ async function generateDocQuiz() {
 
         const quizConfig = {
             subject: `📄 ${docSubject}`,
-            chapter: "Document Quiz",
+            chapter: "Document Test",
             class_level: "Study Doc",
             num_questions: numQuestions,
             language: language,
@@ -464,7 +464,7 @@ async function generateDocQuiz() {
     } catch (err) {
         console.error("Document quiz error:", err);
         navigateTo("config");
-        showError(err.message || "Failed to generate quiz from document.");
+        showError(err.message || "Failed to generate test from document.");
     }
 }
 
@@ -1278,7 +1278,7 @@ function switchProfileTab(tab) {
 async function loadUserProfileHistory() {
     const container = document.getElementById("profile-attempts-container");
     if (!container) return;
-    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your quiz history...</p>`;
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your test history...</p>`;
 
     try {
         const data = await api.getUserAttempts();
@@ -1289,10 +1289,10 @@ async function loadUserProfileHistory() {
         if (attempts.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-8">
-                    <p class="text-base text-gray-600 font-medium mb-1">No quizzes attempted yet</p>
-                    <p class="text-sm text-gray-400 mb-4">Start your first quiz to track your score and view detailed explanations!</p>
+                    <p class="text-base text-gray-600 font-medium mb-1">No tests attempted yet</p>
+                    <p class="text-sm text-gray-400 mb-4">Start your first practice test to track your score and view detailed explanations!</p>
                     <button onclick="navigateTo('config')" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors">
-                        Take a Quiz Now →
+                        Take a Test Now →
                     </button>
                 </div>
             `;
@@ -1350,8 +1350,8 @@ async function loadUserProfileHistory() {
                                     type="button"
                                     onclick="confirmDeleteAttempt('${att.id}', '${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}')"
                                     class="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-surface-200 hover:border-red-200"
-                                    title="Delete quiz attempt"
-                                    aria-label="Delete quiz attempt"
+                                    title="Delete test attempt"
+                                    aria-label="Delete test attempt"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -1365,7 +1365,7 @@ async function loadUserProfileHistory() {
             .join("");
     } catch (err) {
         container.innerHTML = `
-            <p class="text-sm text-danger text-center py-4">Failed to load quiz history. Please refresh or try again.</p>
+            <p class="text-sm text-danger text-center py-4">Failed to load test history. Please refresh or try again.</p>
         `;
     }
 }
@@ -1373,13 +1373,13 @@ async function loadUserProfileHistory() {
 async function viewPastResponse(attemptId) {
     state.lastAction = () => viewPastResponse(attemptId);
     navigateTo("loading");
-    document.getElementById("loading-title").textContent = "Loading quiz response...";
+    document.getElementById("loading-title").textContent = "Loading test response...";
     document.getElementById("loading-subtitle").textContent = "Fetching your saved score and step-by-step explanations.";
 
     try {
         const attempt = await api.getAttemptById(attemptId);
         if (!attempt || !attempt.evaluation_results) {
-            throw new Error("Could not find saved details for this quiz attempt.");
+            throw new Error("Could not find saved details for this test attempt.");
         }
 
         const data = {
@@ -1393,7 +1393,7 @@ async function viewPastResponse(attemptId) {
         navigateTo("results");
         saveSessionState();
     } catch (err) {
-        showError(err.message || "Failed to load past quiz response.");
+        showError(err.message || "Failed to load past test response.");
     }
 }
 
@@ -1404,12 +1404,12 @@ async function viewPastResponse(attemptId) {
 
 async function shareCurrentQuiz() {
     if (!state.sessionId && !state.pendingSharedQuizId) {
-        showError("No active quiz session found to share.");
+        showError("No active test session found to share.");
         return;
     }
 
     if (!auth.isLoggedIn()) {
-        showError("You must be signed in to share quizzes with students.");
+        showError("You must be signed in to share tests with students.");
         return;
     }
 
@@ -1450,7 +1450,7 @@ function copyShareUrl() {
 
 async function loadTeacherSharedQuizzes() {
     const container = document.getElementById("profile-attempts-container");
-    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your shared quizzes...</p>`;
+    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading your shared tests...</p>`;
 
     try {
         const data = await api.getTeacherSharedQuizzes();
@@ -1459,10 +1459,10 @@ async function loadTeacherSharedQuizzes() {
         if (quizzes.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-8">
-                    <p class="text-base text-gray-600 font-medium mb-1">No shared quizzes yet</p>
-                    <p class="text-sm text-gray-400 mb-4">Generate any quiz and click "Share Quiz" to share it with your students!</p>
+                    <p class="text-base text-gray-600 font-medium mb-1">No shared tests yet</p>
+                    <p class="text-sm text-gray-400 mb-4">Generate any practice test and click "Share Test" to share it with your students!</p>
                     <button onclick="navigateTo('config')" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-card transition-colors">
-                        Create & Share Quiz →
+                        Create & Share Test →
                     </button>
                 </div>
             `;
@@ -1520,8 +1520,8 @@ async function loadTeacherSharedQuizzes() {
                                     type="button"
                                     onclick="confirmDeleteSharedQuiz('${q.id}', '${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}')"
                                     class="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors cursor-pointer border border-surface-200 hover:border-red-200"
-                                    title="Delete shared quiz"
-                                    aria-label="Delete shared quiz"
+                                    title="Delete shared test"
+                                    aria-label="Delete shared test"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -1535,7 +1535,7 @@ async function loadTeacherSharedQuizzes() {
             .join("");
     } catch (err) {
         container.innerHTML = `
-            <p class="text-sm text-danger text-center py-4">Failed to load shared quizzes. Please try again.</p>
+            <p class="text-sm text-danger text-center py-4">Failed to load shared tests. Please try again.</p>
         `;
     }
 }
@@ -1644,7 +1644,7 @@ async function checkStudentShareUrl() {
             modal.classList.remove("hidden");
             modal.style.display = "flex";
         } catch (err) {
-            showError("The shared quiz link is invalid or expired.");
+            showError("The shared test link is invalid or expired.");
         }
     }
 }
@@ -1728,16 +1728,16 @@ function closeConfirmDeleteModal() {
 
 function confirmDeleteAttempt(attemptId, quizTitle) {
     openConfirmDeleteModal(
-        "Delete Quiz Attempt?",
+        "Delete Test Attempt?",
         `Are you sure you want to delete your past attempt for "${quizTitle}"? This cannot be undone.`,
         async () => {
             try {
                 await api.deleteUserAttempt(attemptId);
-                showToast("🗑️ Quiz attempt deleted successfully.");
+                showToast("🗑️ Test attempt deleted successfully.");
                 loadUserProfileHistory();
             } catch (err) {
                 console.error("Delete attempt error:", err);
-                showError(err.message || "Failed to delete quiz attempt.");
+                showError(err.message || "Failed to delete test attempt.");
             }
         }
     );
@@ -1745,16 +1745,16 @@ function confirmDeleteAttempt(attemptId, quizTitle) {
 
 function confirmDeleteSharedQuiz(quizId, quizTitle) {
     openConfirmDeleteModal(
-        "Delete Shared Quiz?",
-        `Are you sure you want to delete "${quizTitle}"? All student responses and leaderboard records for this quiz will also be removed.`,
+        "Delete Shared Test?",
+        `Are you sure you want to delete "${quizTitle}"? All student responses and leaderboard records for this test will also be removed.`,
         async () => {
             try {
                 await api.deleteSharedQuiz(quizId);
-                showToast("🗑️ Shared quiz deleted successfully.");
+                showToast("🗑️ Shared test deleted successfully.");
                 loadTeacherSharedQuizzes();
             } catch (err) {
                 console.error("Delete shared quiz error:", err);
-                showError(err.message || "Failed to delete shared quiz.");
+                showError(err.message || "Failed to delete shared test.");
             }
         }
     );
