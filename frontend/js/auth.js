@@ -334,6 +334,9 @@ async function handleSignUp(event) {
  * Handle sign-out button click
  */
 async function handleSignOut() {
+    if (typeof clearSessionState === "function") {
+        clearSessionState();
+    }
     await auth.signOut();
 }
 

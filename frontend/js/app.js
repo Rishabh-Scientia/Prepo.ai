@@ -13,6 +13,7 @@ const state = {
     sessionId: null,
     questions: [],         // questions from the API (no correct answers)
     selectedAnswers: {},   // { question_id: selected_option }
+    activeQuizConfig: null, // metadata for current quiz attempt
     selectedDifficulty: "Medium",
     selectedDocDifficulty: "Medium",
     selectedDocFile: null,
@@ -134,6 +135,102 @@ function validateConfig() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SESSION STATE PERSISTENCE (PREVENTS DATA LOSS ON REFRESH)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ACTIVE_SESSION_STORAGE_KEY = "prepo_active_session_state";
+
+function saveSessionState() {
+    if (state.currentPage === "attempt" && state.questions && state.questions.length > 0) {
+        const payload = {
+            currentPage: "attempt",
+            sessionId: state.sessionId,
+            questions: state.questions,
+            selectedAnswers: state.selectedAnswers || {},
+            activeQuizConfig: state.activeQuizConfig || null,
+            isStudentMode: state.isStudentMode || false,
+            studentName: state.studentName || "",
+            pendingSharedQuizId: state.pendingSharedQuizId || null,
+            timestamp: Date.now(),
+        };
+        sessionStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(payload));
+    } else if (state.currentPage === "results" && state.results) {
+        const payload = {
+            currentPage: "results",
+            sessionId: state.sessionId,
+            results: state.results,
+            activeQuizConfig: state.activeQuizConfig || null,
+            timestamp: Date.now(),
+        };
+        sessionStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(payload));
+    }
+}
+
+function clearSessionState() {
+    sessionStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+}
+
+function restoreSessionState() {
+    try {
+        const raw = sessionStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+        if (!raw) return false;
+        const payload = JSON.parse(raw);
+
+        // Expire session after 12 hours
+        if (Date.now() - (payload.timestamp || 0) > 12 * 60 * 60 * 1000) {
+            clearSessionState();
+            return false;
+        }
+
+        if (payload.currentPage === "attempt" && Array.isArray(payload.questions) && payload.questions.length > 0) {
+            state.sessionId = payload.sessionId;
+            state.questions = payload.questions;
+            state.selectedAnswers = payload.selectedAnswers || {};
+            state.activeQuizConfig = payload.activeQuizConfig;
+            state.isStudentMode = payload.isStudentMode || false;
+            state.studentName = payload.studentName || "";
+            state.pendingSharedQuizId = payload.pendingSharedQuizId || null;
+
+            if (payload.activeQuizConfig) {
+                renderQuizAttempt(payload.activeQuizConfig);
+            }
+
+            // Restore highlighted options and navigation state in UI
+            if (state.selectedAnswers) {
+                Object.entries(state.selectedAnswers).forEach(([qid, ans]) => {
+                    const question = state.questions.find((q) => q.id === qid);
+                    if (question) {
+                        const optIdx = question.options.indexOf(ans);
+                        if (optIdx !== -1) {
+                            const btn = document.getElementById(`opt-${qid}-${optIdx}`);
+                            if (btn) btn.classList.add("selected");
+                            const navBtn = document.getElementById(`nav-${qid}`);
+                            if (navBtn) navBtn.classList.add("answered");
+                        }
+                    }
+                });
+                updateAnsweredCount();
+            }
+
+            navigateTo("attempt");
+            return true;
+        } else if (payload.currentPage === "results" && payload.results) {
+            state.sessionId = payload.sessionId;
+            state.results = payload.results;
+            state.activeQuizConfig = payload.activeQuizConfig;
+            renderResults(payload.results);
+            navigateTo("results");
+            return true;
+        }
+    } catch (e) {
+        console.error("Error restoring session state:", e);
+        clearSessionState();
+    }
+    return false;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GENERATE QUIZ
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -179,16 +276,19 @@ async function generateQuiz() {
         state.questions = data.questions;
         state.selectedAnswers = {};
         state.results = null;
+        state.activeQuizConfig = config;
 
         // Refresh user credits
         refreshUserCredits();
 
         renderQuizAttempt(config);
         navigateTo("attempt");
+        saveSessionState();
     } catch (err) {
         showError(err.message || "Failed to generate quiz. Please try again.");
     }
 }
+
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -338,24 +438,27 @@ async function generateDocQuiz() {
     try {
         const data = await api.generateQuizFromDoc(formData);
 
-        state.sessionId = data.session_id;
-        state.questions = data.questions;
-        state.selectedAnswers = {};
-        state.results = null;
-
-        // Refresh user credits
-        refreshUserCredits();
-
-        renderQuizAttempt({
+        const quizConfig = {
             subject: `📄 ${docSubject}`,
             chapter: "Document Quiz",
             class_level: "Study Doc",
             num_questions: numQuestions,
             language: language,
             difficulty: difficulty,
-        });
+        };
 
+        state.sessionId = data.session_id;
+        state.questions = data.questions;
+        state.selectedAnswers = {};
+        state.results = null;
+        state.activeQuizConfig = quizConfig;
+
+        // Refresh user credits
+        refreshUserCredits();
+
+        renderQuizAttempt(quizConfig);
         navigateTo("attempt");
+        saveSessionState();
     } catch (err) {
         console.error("Document quiz error:", err);
         navigateTo("config");
@@ -485,6 +588,7 @@ function selectOption(questionId, optionIndex) {
     if (navBtn) navBtn.classList.add("answered");
 
     updateAnsweredCount();
+    saveSessionState();
 }
 
 function scrollToQuestion(questionId) {
@@ -542,6 +646,7 @@ async function submitQuiz() {
             };
             renderResults(state.results);
             navigateTo("results");
+            saveSessionState();
         } catch (err) {
             showError(err.message || "Failed to submit test.");
         }
@@ -561,6 +666,7 @@ async function submitQuiz() {
         state.results = data;
         renderResults(data);
         navigateTo("results");
+        saveSessionState();
     } catch (err) {
         showError(err.message || "Failed to evaluate quiz. Please try again.");
     }
@@ -1111,6 +1217,7 @@ async function viewPastResponse(attemptId) {
         state.results = data;
         renderResults(data);
         navigateTo("results");
+        saveSessionState();
     } catch (err) {
         showError(err.message || "Failed to load past quiz response.");
     }
@@ -1382,16 +1489,19 @@ function startStudentQuiz(event) {
     state.questions = state.sharedQuizData.questions;
     state.selectedAnswers = {};
 
-    renderQuizAttempt({
+    const quizConfig = {
         subject: state.sharedQuizData.subject,
         chapter: state.sharedQuizData.chapter,
         class_level: state.sharedQuizData.class_level,
         difficulty: state.sharedQuizData.difficulty,
         num_questions: state.sharedQuizData.questions.length,
         language: state.sharedQuizData.language,
-    });
+    };
 
+    state.activeQuizConfig = quizConfig;
+    renderQuizAttempt(quizConfig);
     navigateTo("attempt");
+    saveSessionState();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1492,6 +1602,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (urlParams.has("quiz_id")) {
         checkStudentShareUrl();
     } else {
-        navigateTo("home");
+        // Restore active quiz or results session if refreshed
+        const restored = restoreSessionState();
+        if (!restored) {
+            navigateTo("home");
+        }
     }
 });
+
+// Auto-save state before page unload / refresh
+window.addEventListener("beforeunload", () => {
+    if (typeof saveSessionState === "function") {
+        saveSessionState();
+    }
+});
+
+
