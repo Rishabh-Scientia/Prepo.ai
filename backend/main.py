@@ -20,7 +20,7 @@ import json
 import urllib.request
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
 from models.schemas import (
@@ -56,6 +56,9 @@ from store.db_store import (
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
 from graph.evaluate_graph import build_evaluate_graph
+from graph.generate_doc_graph import build_generate_doc_graph
+from utils.doc_parser import extract_text_from_file, validate_document_text
+
 
 # ── Load environment ─────────────────────────────────────────────────────────
 
@@ -88,6 +91,7 @@ app.add_middleware(
 # Compile graphs once at startup
 generate_graph = build_generate_graph()
 evaluate_graph = build_evaluate_graph()
+generate_doc_graph = build_generate_doc_graph()
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -122,7 +126,7 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
     if credits <= 0:
         raise HTTPException(
             status_code=403,
-            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Contact yoursbench@gmail.com for getting more credit.",
+            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Please top up credits to generate quizzes.",
         )
 
     # Run the generation graph
@@ -181,6 +185,121 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
         session_id=session_id,
         questions=public_questions,
     )
+
+
+@app.post("/api/generate-quiz-from-doc", response_model=GenerateQuizResponse)
+async def generate_quiz_from_doc(
+    file: UploadFile = File(...),
+    num_questions: int = Form(10),
+    language: str = Form("English"),
+    difficulty: str = Form("Medium"),
+    subject: str = Form(""),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Generate a quiz from an uploaded PDF, DOCX, or TXT document.
+    Includes 2-Layer Guardrails and preserves user credits if rejected.
+    """
+    user_id = user.get("user_id")
+
+    # 1. Credit Check
+    credits = get_user_credits(user_id)
+    if credits <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Please top up credits to generate quizzes.",
+        )
+
+    # 2. Read File Bytes & Validate Size (Max 20MB)
+    try:
+        file_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {str(e)}")
+
+    if not file_bytes or len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty. Please upload a valid document.")
+
+    if len(file_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds the 20MB limit. Please upload a smaller document.")
+
+    filename = file.filename or "uploaded_document"
+
+    # 3. Layer-1 Guardrail: Text Extraction & Heuristic Quality Check
+    try:
+        extracted_text = extract_text_from_file(file_bytes, filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from '{filename}': {str(e)}")
+
+    is_valid_text, error_msg = validate_document_text(extracted_text)
+    if not is_valid_text:
+        # Reject immediately with friendly message — zero credits deducted!
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    # 4. Layer-2 Guardrail & Quiz Generation via LangGraph
+    doc_subject = (subject or "").strip() or os.path.splitext(filename)[0]
+
+    result = generate_doc_graph.invoke({
+        "document_text": extracted_text,
+        "num_questions": int(num_questions),
+        "language": language,
+        "difficulty": difficulty,
+        "subject": doc_subject,
+        "raw_llm_output": "",
+        "retry_count": 0,
+        "quiz": None,
+        "error": None,
+        "guardrail_rejected": False,
+        "guardrail_message": None,
+    })
+
+    # If Layer-2 Guardrail rejected as non-educational:
+    if result.get("guardrail_rejected") or (result.get("error") and "educational" in str(result.get("error", "")).lower()):
+        msg = result.get("guardrail_message") or result.get("error") or "The uploaded document does not contain adequate educational material to generate a quality quiz. Please upload a clear study document or notes."
+        raise HTTPException(status_code=400, detail=msg)
+
+    if result.get("error") or not result.get("quiz"):
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error") or "Quiz generation failed. Please ensure the document text is clear and try again.",
+        )
+
+    quiz_data = result["quiz"]
+
+    # 5. Deduct 1 credit ONLY upon successful quiz creation
+    deduct_user_credit(user_id)
+
+    # 6. Store full session server-side with document context
+    session_id = str(uuid.uuid4())
+    session_store.save(session_id, {
+        "quiz": quiz_data,
+        "document_text": extracted_text,
+        "subject": doc_subject,
+        "chapter": "Document Quiz",
+        "class_level": "Document",
+        "difficulty": difficulty,
+        "language": language,
+        "filename": filename,
+    })
+
+    # 7. Build public response without answers
+    public_questions = [
+        QuestionPublic(
+            id=q["id"],
+            type=q["type"],
+            question=q["question"],
+            options=q["options"],
+            difficulty=q["difficulty"],
+        )
+        for q in quiz_data["questions"]
+    ]
+
+    return GenerateQuizResponse(
+        session_id=session_id,
+        questions=public_questions,
+    )
+
 
 
 @app.post("/api/evaluate-quiz", response_model=EvaluateQuizResponse)

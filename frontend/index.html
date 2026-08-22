@@ -452,11 +452,35 @@
     <!-- ═══ PAGE: QUIZ CONFIGURATION ═══ -->
     <section id="page-config" class="page hidden">
         <div class="max-w-2xl mx-auto px-4 py-8">
-            <div class="border border-surface-200 rounded-card bg-white">
-                <div class="px-5 py-3 border-b border-surface-200 bg-surface-100">
-                    <h1 class="text-lg font-semibold text-gray-900 m-0">Configure Your Quiz</h1>
-                    <p class="text-sm text-gray-500 m-0 mt-1">Fill in all fields to generate your quiz.</p>
+            <div class="border border-surface-200 rounded-card bg-white shadow-sm overflow-hidden">
+                <!-- Header with Mode Switcher Tabs -->
+                <div class="px-5 py-4 border-b border-surface-200 bg-surface-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h1 class="text-lg font-semibold text-gray-900 m-0">Create Practice Quiz</h1>
+                        <p class="text-xs text-gray-500 m-0 mt-0.5">Generate instant AI assessments tailored to your syllabus or notes.</p>
+                    </div>
+                    <!-- Mode Switcher -->
+                    <div class="flex items-center bg-white p-1 rounded-card border border-surface-200 shadow-xs self-start sm:self-auto">
+                        <button
+                            type="button"
+                            id="tab-mode-topic"
+                            onclick="switchConfigMode('topic')"
+                            class="text-xs font-semibold px-3 py-1.5 rounded-card transition-all cursor-pointer bg-primary-600 text-white shadow-xs"
+                        >
+                            ✍️ By Topic
+                        </button>
+                        <button
+                            type="button"
+                            id="tab-mode-doc"
+                            onclick="switchConfigMode('doc')"
+                            class="text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-card transition-all cursor-pointer"
+                        >
+                            📄 Upload Doc
+                        </button>
+                    </div>
                 </div>
+
+                <!-- FORM 1: TOPIC / CHAPTER FORM (EXISTING) -->
                 <form id="quiz-config-form" class="p-5 space-y-5" onsubmit="return false;">
 
                     <!-- Class / Grade / Level -->
@@ -564,11 +588,124 @@
                             type="button"
                             id="generate-btn"
                             onclick="generateQuiz()"
-                            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm"
+                            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs flex items-center justify-center gap-2"
                         >
-                            Generate Quiz
+                            <span>🚀 Generate Quiz</span>
+                            <span class="text-xs bg-primary-700 px-2 py-0.5 rounded-full font-normal">1 Credit</span>
                         </button>
                         <p id="config-error" class="text-sm text-danger mt-2 hidden"></p>
+                    </div>
+                </form>
+
+                <!-- FORM 2: UPLOAD DOCUMENT FORM (NEW) -->
+                <form id="doc-quiz-config-form" class="p-5 space-y-5 hidden" onsubmit="return false;">
+                    <!-- Drag & Drop Upload Zone -->
+                    <div class="form-group">
+                        <label class="form-label">Upload Study Document <span class="text-danger">*</span></label>
+                        <div
+                            id="doc-dropzone"
+                            onclick="document.getElementById('doc-file-input').click()"
+                            class="border-2 border-dashed border-primary-300 hover:border-primary-500 bg-primary-50/40 hover:bg-primary-50/80 rounded-card p-6 text-center cursor-pointer transition-all duration-200"
+                        >
+                            <input
+                                type="file"
+                                id="doc-file-input"
+                                class="hidden"
+                                accept=".pdf,.docx,.doc,.txt"
+                                onchange="handleDocFileSelect(event)"
+                            />
+                            <div id="dropzone-empty" class="space-y-2">
+                                <div class="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                                    📄
+                                </div>
+                                <div class="text-sm font-semibold text-gray-800">
+                                    Click to browse or drag & drop file here
+                                </div>
+                                <p class="text-xs text-gray-500 max-w-xs mx-auto m-0">
+                                    Supports <strong>PDF (.pdf)</strong>, <strong>Word (.docx)</strong>, and <strong>Text (.txt)</strong> up to 20MB.
+                                </p>
+                            </div>
+                            <!-- Selected File Card -->
+                            <div id="dropzone-selected" class="hidden items-center justify-between bg-white border border-primary-200 rounded-card p-3 shadow-xs">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-9 h-9 rounded-card bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                        📄
+                                    </div>
+                                    <div class="text-left min-w-0">
+                                        <p class="text-xs font-semibold text-gray-900 truncate m-0" id="selected-doc-name">notes.pdf</p>
+                                        <p class="text-[10px] text-gray-500 m-0 mt-0.5" id="selected-doc-size">1.2 MB</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="event.stopPropagation(); removeSelectedDoc();"
+                                    class="text-xs text-gray-400 hover:text-red-600 p-1.5 rounded-card hover:bg-red-50 transition-colors cursor-pointer"
+                                    title="Remove file"
+                                >
+                                    ✕ Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optional Subject / Title -->
+                    <div class="form-group">
+                        <label for="doc-subject" class="form-label">Subject / Chapter Title <span class="text-xs text-gray-400 font-normal">(Optional)</span></label>
+                        <input
+                            type="text"
+                            id="doc-subject"
+                            class="form-input"
+                            placeholder="Auto-detected from file name if left blank"
+                        />
+                    </div>
+
+                    <!-- Row: Number of Questions + Language -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Number of Questions -->
+                        <div class="form-group">
+                            <label for="doc-num-questions" class="form-label">Number of Questions <span class="text-danger">*</span></label>
+                            <select id="doc-num-questions" class="form-select">
+                                <option value="5">5 Questions</option>
+                                <option value="10" selected>10 Questions</option>
+                                <option value="15">15 Questions</option>
+                                <option value="20">20 Questions</option>
+                            </select>
+                        </div>
+
+                        <!-- Language -->
+                        <div class="form-group">
+                            <label for="doc-language" class="form-label">Language <span class="text-danger">*</span></label>
+                            <select id="doc-language" class="form-select">
+                                <option value="English" selected>English</option>
+                                <option value="Hindi">Hindi</option>
+                                <option value="Hinglish">Hinglish</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty -->
+                    <div class="form-group">
+                        <label class="form-label">Difficulty Level <span class="text-danger">*</span></label>
+                        <div class="flex flex-wrap gap-2" id="doc-difficulty-group">
+                            <button type="button" class="doc-diff-btn diff-btn" data-value="Easy" onclick="selectDocDifficulty('Easy')">Easy</button>
+                            <button type="button" class="doc-diff-btn diff-btn active" data-value="Medium" onclick="selectDocDifficulty('Medium')">Medium</button>
+                            <button type="button" class="doc-diff-btn diff-btn" data-value="Hard" onclick="selectDocDifficulty('Hard')">Hard</button>
+                            <button type="button" class="doc-diff-btn diff-btn" data-value="Mixed" onclick="selectDocDifficulty('Mixed')">Mixed</button>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <div class="pt-2 border-t border-surface-200">
+                        <button
+                            type="button"
+                            id="doc-generate-btn"
+                            onclick="generateDocQuiz()"
+                            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-surface-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-card transition-colors text-sm cursor-pointer shadow-xs flex items-center justify-center gap-2"
+                        >
+                            <span>🚀 Generate Quiz from Document</span>
+                            <span class="text-xs bg-primary-700 px-2 py-0.5 rounded-full font-normal">1 Credit</span>
+                        </button>
+                        <p id="doc-config-error" class="text-sm text-danger mt-2 hidden"></p>
                     </div>
                 </form>
             </div>

@@ -14,6 +14,9 @@ const state = {
     questions: [],         // questions from the API (no correct answers)
     selectedAnswers: {},   // { question_id: selected_option }
     selectedDifficulty: "Medium",
+    selectedDocDifficulty: "Medium",
+    selectedDocFile: null,
+    configMode: "topic",   // "topic" | "doc"
     results: null,         // evaluation results from API
     lastAction: null,      // for retry
     activeProfileTab: "history", // "history" | "teacher"
@@ -186,6 +189,209 @@ async function generateQuiz() {
         showError(err.message || "Failed to generate quiz. Please try again.");
     }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOCUMENT UPLOAD QUIZ GENERATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+function switchConfigMode(mode) {
+    state.configMode = mode;
+    const topicTab = document.getElementById("tab-mode-topic");
+    const docTab = document.getElementById("tab-mode-doc");
+    const topicForm = document.getElementById("quiz-config-form");
+    const docForm = document.getElementById("doc-quiz-config-form");
+
+    if (mode === "doc") {
+        if (topicForm) topicForm.classList.add("hidden");
+        if (docForm) docForm.classList.remove("hidden");
+        if (topicTab) {
+            topicTab.className = "text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-card transition-all cursor-pointer";
+        }
+        if (docTab) {
+            docTab.className = "text-xs font-semibold px-3 py-1.5 rounded-card transition-all cursor-pointer bg-primary-600 text-white shadow-xs";
+        }
+    } else {
+        if (docForm) docForm.classList.add("hidden");
+        if (topicForm) topicForm.classList.remove("hidden");
+        if (docTab) {
+            docTab.className = "text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-card transition-all cursor-pointer";
+        }
+        if (topicTab) {
+            topicTab.className = "text-xs font-semibold px-3 py-1.5 rounded-card transition-all cursor-pointer bg-primary-600 text-white shadow-xs";
+        }
+    }
+}
+
+function selectDocDifficulty(difficulty) {
+    state.selectedDocDifficulty = difficulty;
+    document.querySelectorAll(".doc-diff-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.value === difficulty);
+    });
+}
+
+function handleDocFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    // Validate extension
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["pdf", "docx", "doc", "txt"].includes(ext)) {
+        showError("Invalid file format. Please upload a PDF (.pdf), Word document (.docx), or Text file (.txt).");
+        return;
+    }
+
+    // Validate size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+        showError("File size exceeds 20MB limit. Please upload a smaller document.");
+        return;
+    }
+
+    state.selectedDocFile = file;
+
+    // Format file size
+    const sizeStr = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+    const emptyEl = document.getElementById("dropzone-empty");
+    const selectedEl = document.getElementById("dropzone-selected");
+    const nameEl = document.getElementById("selected-doc-name");
+    const sizeEl = document.getElementById("selected-doc-size");
+
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = sizeStr;
+
+    if (emptyEl) emptyEl.classList.add("hidden");
+    if (selectedEl) {
+        selectedEl.classList.remove("hidden");
+        selectedEl.classList.add("flex");
+    }
+
+    // Auto-fill subject placeholder if empty
+    const subjectInput = document.getElementById("doc-subject");
+    if (subjectInput && !subjectInput.value.trim()) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "");
+        subjectInput.placeholder = baseName;
+    }
+}
+
+function removeSelectedDoc() {
+    state.selectedDocFile = null;
+    const input = document.getElementById("doc-file-input");
+    if (input) input.value = "";
+
+    const emptyEl = document.getElementById("dropzone-empty");
+    const selectedEl = document.getElementById("dropzone-selected");
+
+    if (selectedEl) {
+        selectedEl.classList.add("hidden");
+        selectedEl.classList.remove("flex");
+    }
+    if (emptyEl) emptyEl.classList.remove("hidden");
+
+    const subjectInput = document.getElementById("doc-subject");
+    if (subjectInput) subjectInput.placeholder = "Auto-detected from file name if left blank";
+}
+
+async function generateDocQuiz() {
+    // Check credits first
+    if (state.userCredits <= 0) {
+        showCreditLimitModal();
+        return;
+    }
+
+    const errorEl = document.getElementById("doc-config-error");
+    if (errorEl) errorEl.classList.add("hidden");
+
+    if (!state.selectedDocFile) {
+        if (errorEl) {
+            errorEl.textContent = "Please select or upload a study document (PDF, DOCX, or TXT).";
+            errorEl.classList.remove("hidden");
+        }
+        return;
+    }
+
+    const file = state.selectedDocFile;
+    const numQuestions = parseInt(document.getElementById("doc-num-questions").value || "10", 10);
+    const language = document.getElementById("doc-language").value || "English";
+    const difficulty = state.selectedDocDifficulty || "Medium";
+    const customSubject = (document.getElementById("doc-subject").value || "").trim();
+    const docSubject = customSubject || file.name.replace(/\.[^/.]+$/, "");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("num_questions", numQuestions);
+    formData.append("language", language);
+    formData.append("difficulty", difficulty);
+    if (customSubject) {
+        formData.append("subject", customSubject);
+    }
+
+    // Show loading screen
+    state.lastAction = () => generateDocQuiz();
+    navigateTo("loading");
+    document.getElementById("loading-title").textContent = "Analyzing document & generating quiz...";
+    document.getElementById("loading-subtitle").textContent =
+        `Creating ${numQuestions} ${difficulty.toLowerCase()} questions grounded strictly in ${file.name}`;
+
+    try {
+        const data = await api.generateQuizFromDoc(formData);
+
+        state.sessionId = data.session_id;
+        state.questions = data.questions;
+        state.selectedAnswers = {};
+        state.results = null;
+
+        // Refresh user credits
+        refreshUserCredits();
+
+        renderQuizAttempt({
+            subject: `📄 ${docSubject}`,
+            chapter: "Document Quiz",
+            class_level: "Study Doc",
+            num_questions: numQuestions,
+            language: language,
+            difficulty: difficulty,
+        });
+
+        navigateTo("attempt");
+    } catch (err) {
+        console.error("Document quiz error:", err);
+        navigateTo("config");
+        showError(err.message || "Failed to generate quiz from document.");
+    }
+}
+
+function setupDocDropzone() {
+    const dropzone = document.getElementById("doc-dropzone");
+    if (!dropzone) return;
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add("border-primary-600", "bg-primary-100/50");
+        });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove("border-primary-600", "bg-primary-100/50");
+        });
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+            handleDocFileSelect({ target: { files: [files[0]] } });
+        }
+    });
+}
+
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1273,6 +1479,9 @@ function confirmDeleteSharedQuiz(quizId, quizTitle) {
 document.addEventListener("DOMContentLoaded", async () => {
     // Initialize auth first
     await auth.init();
+
+    // Setup document dropzone listeners
+    setupDocDropzone();
 
     // Check if opening via share link
     const urlParams = new URLSearchParams(window.location.search);

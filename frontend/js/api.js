@@ -60,6 +60,44 @@ const api = {
     },
 
     /**
+     * Generate a quiz from an uploaded document (PDF, DOCX, TXT)
+     * @param {FormData} formData
+     * @returns {Promise<{ session_id: string, questions: Array }>}
+     */
+    async generateQuizFromDoc(formData) {
+        const token = await auth.getToken();
+        const headers = {};
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+        // Note: Do NOT set Content-Type header when sending FormData; browser handles boundary automatically
+
+        const res = await fetch(`${API_BASE}/api/generate-quiz-from-doc`, {
+            method: "POST",
+            headers: headers,
+            body: formData,
+        });
+
+        if (res.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        if (res.status === 403) {
+            const err = await res.json().catch(() => ({}));
+            const error = new Error(err.detail || "Credit limit reached. Please purchase credits to generate quizzes.");
+            error.isCreditLimit = true;
+            throw error;
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Quiz generation failed (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
      * Evaluate submitted answers
      * @param {string} sessionId
      * @param {Array<{ question_id: string, selected_option: string }>} answers
