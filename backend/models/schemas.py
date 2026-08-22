@@ -173,3 +173,37 @@ class EvaluateQuizResponse(BaseModel):
     score: int
     total: int
     results: List[QuestionResult]
+
+
+# ── Payment Models ──────────────────────────────────────────────────────────
+
+class CreateOrderRequest(BaseModel):
+    """Request payload to initiate a Razorpay payment order."""
+    plan_id: str = Field(..., description="Plan identifier, e.g. 'plan_30' or 'plan_100'")
+
+
+class CreateOrderResponse(BaseModel):
+    """Response payload with Razorpay order details for checkout."""
+    order_id: str
+    amount: int
+    currency: str
+    key_id: str
+    plan_id: str
+    credits: int
+    plan_name: str
+
+
+class VerifyPaymentRequest(BaseModel):
+    """Request payload from frontend after successful Razorpay checkout."""
+    razorpay_order_id: str = Field(..., min_length=1)
+    razorpay_payment_id: str = Field(..., min_length=1)
+    razorpay_signature: str = Field(..., min_length=1)
+    plan_id: str = Field(..., min_length=1)
+
+
+class VerifyPaymentResponse(BaseModel):
+    """Response payload confirming payment verification and credit addition."""
+    success: bool
+    credits: int
+    message: str
+

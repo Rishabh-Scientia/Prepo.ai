@@ -503,10 +503,177 @@ function closeCreditLimitModal() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// BUY CREDITS & RAZORPAY PAYMENT FLOW
+// ═══════════════════════════════════════════════════════════════════════════
+
+function openBuyCreditsModal() {
+    if (typeof auth === "undefined" || !auth || !auth.isLoggedIn()) {
+        showError("Please sign in to view and buy quiz credit packs.");
+        setTimeout(() => {
+            navigateTo("signin");
+        }, 1200);
+        return;
+    }
+
+    const modal = document.getElementById("buy-credits-modal");
+    const countEl = document.getElementById("modal-current-credits");
+    if (countEl) {
+        countEl.textContent = state.userCredits;
+    }
+
+    if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+    }
+}
+
+function closeBuyCreditsModal() {
+    const modal = document.getElementById("buy-credits-modal");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "";
+    }
+}
+
+async function initiatePurchase(planId) {
+    if (typeof auth === "undefined" || !auth || !auth.isLoggedIn()) {
+        closeBuyCreditsModal();
+        showError("Please sign in to purchase credits.");
+        navigateTo("signin");
+        return;
+    }
+
+    const btn = document.getElementById(`btn-buy-${planId}`);
+    const originalBtnHtml = btn ? btn.innerHTML : "";
+
+    // Set Loading State
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block animate-spin">⏳</span> Processing...`;
+    }
+
+    function resetButton() {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml;
+        }
+    }
+
+    try {
+        // 1. Create order on backend
+        const orderData = await api.createPaymentOrder(planId);
+
+        // 2. Check Razorpay SDK is loaded
+        if (typeof window.Razorpay === "undefined") {
+            throw new Error("Razorpay payment gateway failed to load. Please check your internet connection or try again.");
+        }
+
+        const currentUser = auth.getCurrentUser() || {};
+        const userName = currentUser.user_metadata?.full_name || "";
+        const userEmail = currentUser.email || "";
+
+        // 3. Configure Razorpay Checkout
+        const options = {
+            key: orderData.key_id,
+            amount: orderData.amount,
+            currency: orderData.currency || "INR",
+            name: "Prepo.ai",
+            description: `${orderData.credits} AI Quiz Credits (${orderData.plan_name})`,
+            image: "/assets/favicon.png",
+            order_id: orderData.order_id,
+            prefill: {
+                name: userName,
+                email: userEmail,
+            },
+            theme: {
+                color: "#2e73b8", // primary-600
+            },
+            modal: {
+                ondismiss: function () {
+                    resetButton();
+                },
+            },
+            handler: async function (response) {
+                // response contains: razorpay_payment_id, razorpay_order_id, razorpay_signature
+                try {
+                    if (btn) {
+                        btn.innerHTML = `<span class="inline-block animate-spin">⚡</span> Verifying Payment...`;
+                    }
+
+                    // 4. Verify payment on backend
+                    const verifyRes = await api.verifyPayment({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        plan_id: planId,
+                    });
+
+                    // 5. Update state & UI
+                    state.userCredits = verifyRes.credits;
+                    const navCountEl = document.getElementById("nav-credits-count");
+                    if (navCountEl) navCountEl.textContent = verifyRes.credits;
+                    const modalCountEl = document.getElementById("modal-current-credits");
+                    if (modalCountEl) modalCountEl.textContent = verifyRes.credits;
+
+                    closeBuyCreditsModal();
+
+                    showToast(`🎉 Payment Successful! ${orderData.credits} Credits added to your account (Total: ${verifyRes.credits}).`, "success");
+                } catch (err) {
+                    console.error("Payment verification error:", err);
+                    showError(err.message || "Payment verification failed. If money was deducted, please contact support with Order ID: " + response.razorpay_order_id);
+                } finally {
+                    resetButton();
+                }
+            },
+        };
+
+        const rzp = new window.Razorpay(options);
+
+        rzp.on("payment.failed", function (response) {
+            console.error("Razorpay payment failed:", response.error);
+            showError(`Payment Failed: ${response.error.description || response.error.reason || "Transaction could not be completed."}`);
+            resetButton();
+        });
+
+        rzp.open();
+    } catch (err) {
+        console.error("Initiate purchase error:", err);
+        showError(err.message || "Failed to initiate payment. Please try again.");
+        resetButton();
+    }
+}
+
+function showToast(message, type = "success") {
+    let toast = document.getElementById("app-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "app-toast";
+        document.body.appendChild(toast);
+    }
+
+    if (type === "success") {
+        toast.className = "fixed bottom-6 right-6 z-[200] px-5 py-3.5 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform bg-gray-900 text-white border border-gray-700 flex items-center gap-2.5";
+    } else {
+        toast.className = "fixed bottom-6 right-6 z-[200] px-5 py-3.5 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform bg-red-600 text-white border border-red-500 flex items-center gap-2.5";
+    }
+
+    toast.innerHTML = message;
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(16px)";
+    }, 4500);
+}
+
 async function refreshUserCredits() {
     if (typeof auth === "undefined" || !auth || !auth.isLoggedIn()) {
         const badge = document.getElementById("nav-credits-badge");
+        const mobileLink = document.getElementById("mobile-nav-credits-link");
         if (badge) badge.classList.add("hidden");
+        if (mobileLink) mobileLink.classList.add("hidden");
         return;
     }
 
@@ -514,8 +681,10 @@ async function refreshUserCredits() {
         const data = await api.getUserCredits();
         const countEl = document.getElementById("nav-credits-count");
         const badge = document.getElementById("nav-credits-badge");
+        const mobileLink = document.getElementById("mobile-nav-credits-link");
         if (countEl) countEl.textContent = data.credits;
         if (badge) badge.classList.remove("hidden");
+        if (mobileLink) mobileLink.classList.remove("hidden");
         state.userCredits = data.credits;
     } catch (err) {
         console.error("Error fetching credits:", err);

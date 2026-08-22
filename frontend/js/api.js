@@ -277,5 +277,75 @@ const api = {
 
         return res.json();
     },
+
+    /**
+     * Fetch available credit pricing plans
+     * @returns {Promise<{ plans: Array, key_id: string }>}
+     */
+    async getPaymentPlans() {
+        const res = await fetch(`${API_BASE}/api/payments/plans`, {
+            method: "GET",
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to fetch payment plans (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
+     * Create Razorpay payment order for purchasing credits
+     * @param {string} planId - e.g. "plan_30" or "plan_100"
+     * @returns {Promise<{ order_id: string, amount: number, currency: string, key_id: string, plan_id: string, credits: number, plan_name: string }>}
+     */
+    async createPaymentOrder(planId) {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/payments/create-order`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({ plan_id: planId }),
+        });
+
+        if (res.status === 401) {
+            throw new Error("Please sign in to buy credits.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Failed to create payment order (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
+
+    /**
+     * Verify completed Razorpay payment and add credits
+     * @param {object} paymentData - { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan_id }
+     * @returns {Promise<{ success: boolean, credits: number, message: string }>}
+     */
+    async verifyPayment(paymentData) {
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${API_BASE}/api/payments/verify-payment`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(paymentData),
+        });
+
+        if (res.status === 401) {
+            throw new Error("Session expired during payment verification. Please sign in again.");
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Payment verification failed (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    },
 };
+
 

@@ -468,3 +468,75 @@ def deduct_user_credit(user_id: str) -> int:
         return new_credits
 
 
+def add_user_credits(user_id: str, credits_to_add: int) -> int:
+    """
+    Add credits to user_id in Supabase and return new total credits.
+    """
+    if not _API_KEY or not user_id:
+        return 3 + credits_to_add
+
+    current = get_user_credits(user_id)
+    new_credits = current + credits_to_add
+
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits?user_id=eq.{user_id}"
+    payload = {"credits": new_credits}
+    try:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint,
+            data=data_bytes,
+            headers=_get_headers(),
+            method="PATCH",
+        )
+        with urllib.request.urlopen(req) as response:
+            return new_credits
+    except Exception as e:
+        print(f"ERROR adding credits for {user_id}: {e}")
+        return new_credits
+
+
+def record_payment(
+    user_id: str,
+    order_id: str,
+    payment_id: str,
+    amount: int,
+    credits_added: int,
+    plan_id: str,
+    status: str = "success",
+) -> Optional[Dict[str, Any]]:
+    """
+    Record payment transaction in Supabase payments table.
+    """
+    if not _API_KEY:
+        return None
+
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/payments"
+    payload = {
+        "user_id": user_id,
+        "order_id": order_id,
+        "payment_id": payment_id,
+        "amount": amount,
+        "credits_added": credits_added,
+        "plan_id": plan_id,
+        "status": status,
+    }
+    try:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint,
+            data=data_bytes,
+            headers=_get_headers(),
+            method="POST",
+        )
+        with urllib.request.urlopen(req) as response:
+            res_body = response.read().decode("utf-8")
+            result = json.loads(res_body)
+            if isinstance(result, list) and len(result) > 0:
+                return result[0]
+            return result
+    except Exception as e:
+        print(f"ERROR recording payment transaction for {user_id}: {e}")
+        return None
+
+
+

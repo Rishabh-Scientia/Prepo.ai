@@ -12,6 +12,12 @@ from __future__ import annotations
 import os
 import sys
 import uuid
+import time
+import hmac
+import hashlib
+import base64
+import json
+import urllib.request
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
@@ -25,6 +31,10 @@ from models.schemas import (
     QuestionPublic,
     QuestionResult,
     ExplanationBlock,
+    CreateOrderRequest,
+    CreateOrderResponse,
+    VerifyPaymentRequest,
+    VerifyPaymentResponse,
 )
 from store.session_store import session_store
 from store.db_store import (
@@ -38,6 +48,8 @@ from store.db_store import (
     get_quiz_student_responses,
     get_user_credits,
     deduct_user_credit,
+    add_user_credits,
+    record_payment,
 )
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
@@ -411,5 +423,198 @@ async def get_shared_quiz_leaderboard(quiz_id: str, user: dict = Depends(get_cur
     user_id = user.get("user_id")
     responses = get_quiz_student_responses(quiz_id, user_id)
     return {"responses": responses}
+
+
+# ── Razorpay Payment Gateway & Credits Top-up ────────────────────────────────
+
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+
+CREDIT_PLANS = {
+    "plan_30": {
+        "plan_id": "plan_30",
+        "name": "Starter Pack",
+        "amount": 900,  # 900 paise = ₹9.00
+        "currency": "INR",
+        "credits": 30,
+        "price_display": "₹9",
+        "per_quiz": "₹0.30",
+        "description": "30 AI Quiz Generations with step-by-step solutions",
+        "badge": "Starter",
+        "popular": False,
+    },
+    "plan_100": {
+        "plan_id": "plan_100",
+        "name": "Pro Pack",
+        "amount": 2900,  # 2900 paise = ₹29.00
+        "currency": "INR",
+        "credits": 100,
+        "price_display": "₹29",
+        "per_quiz": "₹0.29",
+        "description": "100 AI Quiz Generations + Teacher sharing enabled",
+        "badge": "Best Value",
+        "popular": True,
+    },
+}
+
+
+def _create_razorpay_order(amount: int, currency: str, receipt: str, notes: dict) -> dict:
+    """
+    Create a Razorpay order using either the official SDK or direct REST API.
+    """
+    if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Razorpay API credentials not configured on server.",
+        )
+
+    # Try official razorpay package
+    try:
+        import razorpay
+        client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        return client.order.create({
+            "amount": amount,
+            "currency": currency,
+            "receipt": receipt,
+            "notes": notes,
+        })
+    except ImportError:
+        pass
+
+    # Fallback to direct HTTP request with Basic Auth
+    auth_bytes = f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode("utf-8")
+    b64_auth = base64.b64encode(auth_bytes).decode("utf-8")
+    headers = {
+        "Authorization": f"Basic {b64_auth}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "amount": amount,
+        "currency": currency,
+        "receipt": receipt,
+        "notes": notes,
+    }
+    data_bytes = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.razorpay.com/v1/orders",
+        data=data_bytes,
+        headers=headers,
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"ERROR creating Razorpay order: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create Razorpay order: {str(e)}")
+
+
+def _verify_razorpay_signature(order_id: str, payment_id: str, signature: str) -> bool:
+    """
+    Verify Razorpay payment signature via HMAC-SHA256.
+    """
+    if not RAZORPAY_KEY_SECRET:
+        return False
+
+    message = f"{order_id}|{payment_id}".encode("utf-8")
+    generated_signature = hmac.new(
+        RAZORPAY_KEY_SECRET.encode("utf-8"),
+        message,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(generated_signature, signature)
+
+
+@app.get("/api/payments/plans")
+async def get_payment_plans():
+    """
+    Public endpoint to fetch available credit top-up offers and public key ID.
+    """
+    return {
+        "plans": list(CREDIT_PLANS.values()),
+        "key_id": RAZORPAY_KEY_ID,
+    }
+
+
+@app.post("/api/payments/create-order", response_model=CreateOrderResponse)
+async def create_payment_order(request: CreateOrderRequest, user: dict = Depends(get_current_user)):
+    """
+    Create a Razorpay order for purchasing credits.
+    """
+    plan = CREDIT_PLANS.get(request.plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail=f"Invalid plan_id. Allowed: {list(CREDIT_PLANS.keys())}")
+
+    user_id = user.get("user_id")
+    email = user.get("email", "")
+    receipt = f"rcpt_{user_id[:8]}_{int(time.time())}"
+
+    order = _create_razorpay_order(
+        amount=plan["amount"],
+        currency=plan["currency"],
+        receipt=receipt,
+        notes={
+            "user_id": user_id,
+            "email": email,
+            "plan_id": plan["plan_id"],
+            "credits": str(plan["credits"]),
+        },
+    )
+
+    return CreateOrderResponse(
+        order_id=order["id"],
+        amount=plan["amount"],
+        currency=plan["currency"],
+        key_id=RAZORPAY_KEY_ID,
+        plan_id=plan["plan_id"],
+        credits=plan["credits"],
+        plan_name=plan["name"],
+    )
+
+
+@app.post("/api/payments/verify-payment", response_model=VerifyPaymentResponse)
+async def verify_payment(request: VerifyPaymentRequest, user: dict = Depends(get_current_user)):
+    """
+    Verify payment signature, add credits to user account, and log transaction.
+    """
+    plan = CREDIT_PLANS.get(request.plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail=f"Invalid plan_id: {request.plan_id}")
+
+    user_id = user.get("user_id")
+
+    # 1. Cryptographic HMAC-SHA256 signature verification
+    is_valid = _verify_razorpay_signature(
+        order_id=request.razorpay_order_id,
+        payment_id=request.razorpay_payment_id,
+        signature=request.razorpay_signature,
+    )
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=400,
+            detail="Payment verification failed: Invalid payment signature.",
+        )
+
+    # 2. Add credits to user in Supabase
+    new_credits = add_user_credits(user_id=user_id, credits_to_add=plan["credits"])
+
+    # 3. Log transaction in Supabase payments table
+    record_payment(
+        user_id=user_id,
+        order_id=request.razorpay_order_id,
+        payment_id=request.razorpay_payment_id,
+        amount=plan["amount"],
+        credits_added=plan["credits"],
+        plan_id=request.plan_id,
+        status="success",
+    )
+
+    return VerifyPaymentResponse(
+        success=True,
+        credits=new_credits,
+        message=f"Payment verified! {plan['credits']} credits added successfully to your account.",
+    )
+
 
 
