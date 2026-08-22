@@ -1039,12 +1039,12 @@ async function loadUserProfileHistory() {
                     : "";
 
                 return `
-                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-base font-semibold text-gray-900 truncate">${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}</span>
+                                <span class="text-sm sm:text-base font-semibold text-gray-900 truncate">${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}</span>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-500">
                                 <span class="tag">${escapeHtml(att.class_level)}</span>
                                 <span>·</span>
                                 <span>${att.total} Questions</span>
@@ -1053,29 +1053,31 @@ async function loadUserProfileHistory() {
                                 ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                            <div class="border px-3 py-1 rounded-card text-center ${badgeClass}">
-                                <span class="text-sm font-bold block leading-tight">${att.score} / ${att.total}</span>
-                                <span class="text-[10px] font-medium opacity-80">${percent}%</span>
+                        <div class="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-surface-100">
+                            <div class="border px-2.5 py-1 rounded-card text-center shrink-0 ${badgeClass}">
+                                <span class="text-xs sm:text-sm font-bold block leading-tight">${att.score} / ${att.total}</span>
+                                <span class="text-[9px] sm:text-[10px] font-medium opacity-80">${percent}%</span>
                             </div>
-                            <button
-                                type="button"
-                                onclick="viewPastResponse('${att.id}')"
-                                class="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
-                            >
-                                View Response
-                            </button>
-                            <button
-                                type="button"
-                                onclick="confirmDeleteAttempt('${att.id}', '${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}')"
-                                class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-transparent hover:border-red-200"
-                                title="Delete quiz attempt"
-                                aria-label="Delete quiz attempt"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    onclick="viewPastResponse('${att.id}')"
+                                    class="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-semibold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-card transition-colors cursor-pointer"
+                                >
+                                    View Response
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="confirmDeleteAttempt('${att.id}', '${escapeHtml(att.subject)} — ${escapeHtml(att.chapter)}')"
+                                    class="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-surface-200 hover:border-red-200"
+                                    title="Delete quiz attempt"
+                                    aria-label="Delete quiz attempt"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1199,12 +1201,12 @@ async function loadTeacherSharedQuizzes() {
                 const shareUrl = `${window.location.origin}${window.location.pathname}?quiz_id=${q.id}`;
 
                 return `
-                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                    <div class="border border-surface-200 rounded-card p-4 hover:border-primary-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-base font-semibold text-gray-900 truncate">${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}</span>
+                                <span class="text-sm sm:text-base font-semibold text-gray-900 truncate">${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}</span>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-500">
                                 <span class="tag">${escapeHtml(q.class_level)}</span>
                                 <span>·</span>
                                 <span>${escapeHtml(q.difficulty)}</span>
@@ -1213,36 +1215,38 @@ async function loadTeacherSharedQuizzes() {
                                 ${dateStr ? `<span>·</span><span>${dateStr}</span>` : ""}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                            <div class="bg-primary-50 border border-primary-200 text-primary-700 px-3 py-1 rounded-card text-center">
-                                <span class="text-sm font-bold block leading-tight">${q.submission_count || 0}</span>
-                                <span class="text-[10px] font-medium uppercase">Students</span>
+                        <div class="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-surface-100">
+                            <div class="bg-primary-50 border border-primary-200 text-primary-700 px-2.5 py-1 rounded-card text-center shrink-0">
+                                <span class="text-xs sm:text-sm font-bold block leading-tight">${q.submission_count || 0}</span>
+                                <span class="text-[9px] sm:text-[10px] font-medium uppercase">Students</span>
                             </div>
-                            <button
-                                type="button"
-                                onclick="copyDirectShareUrl('${shareUrl}')"
-                                class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 text-xs font-medium px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
-                            >
-                                Copy Link
-                            </button>
-                            <button
-                                type="button"
-                                onclick="viewQuizLeaderboard('${q.id}')"
-                                class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-3 py-2 rounded-card transition-colors shrink-0 cursor-pointer"
-                            >
-                                View Responses
-                            </button>
-                            <button
-                                type="button"
-                                onclick="confirmDeleteSharedQuiz('${q.id}', '${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}')"
-                                class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors shrink-0 cursor-pointer border border-transparent hover:border-red-200"
-                                title="Delete shared quiz"
-                                aria-label="Delete shared quiz"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    onclick="copyDirectShareUrl('${shareUrl}')"
+                                    class="bg-surface-100 hover:bg-surface-200 text-gray-700 border border-surface-300 text-xs font-medium px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-card transition-colors cursor-pointer"
+                                >
+                                    Copy Link
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="viewQuizLeaderboard('${q.id}')"
+                                    class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-card transition-colors cursor-pointer shadow-xs"
+                                >
+                                    Responses
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="confirmDeleteSharedQuiz('${q.id}', '${escapeHtml(q.subject)} — ${escapeHtml(q.chapter)}')"
+                                    class="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-card transition-colors cursor-pointer border border-surface-200 hover:border-red-200"
+                                    title="Delete shared quiz"
+                                    aria-label="Delete shared quiz"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
