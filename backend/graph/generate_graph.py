@@ -153,28 +153,67 @@ def _extract_json_dict(raw: str) -> dict:
     raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
 
 
+def invoke_groq_safe(
+    prompt: str,
+    model: str,
+    api_key: str,
+    temperature: float = 0.3,
+    max_tokens: int = 6000,
+) -> str:
+    """
+    Safely invoke Groq with automatic fallback.
+    1. First attempt: with response_format={"type": "json_object"}.
+    2. Fallback: if server-side json_validate_failed (HTTP 400) occurs,
+       re-invoke on the same model without response_format so LLM text
+       can be extracted and parsed by _extract_json_dict.
+    """
+    try:
+        llm = ChatGroq(
+            model=model,
+            groq_api_key=api_key,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model_kwargs={"response_format": {"type": "json_object"}},
+        )
+        response = llm.invoke(prompt)
+        raw = response.content
+        if isinstance(raw, list):
+            raw = "".join(str(chunk) for chunk in raw)
+        return str(raw)
+    except Exception as e:
+        err_msg = str(e)
+        # If Groq rejected JSON formatting server-side, fallback to normal generation
+        if "json_validate_failed" in err_msg or "Failed to validate JSON" in err_msg or "400" in err_msg:
+            llm_fallback = ChatGroq(
+                model=model,
+                groq_api_key=api_key,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            response = llm_fallback.invoke(prompt)
+            raw = response.content
+            if isinstance(raw, list):
+                raw = "".join(str(chunk) for chunk in raw)
+            return str(raw)
+        raise
+
+
 def generate_quiz(state: GenerateState) -> GenerateState:
-    """Call Groq to generate quiz questions."""
+    """Call Groq to generate quiz questions with resilient fallback."""
 
     if state.get("error") or state.get("guardrail_rejected"):
         return state
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-    llm = ChatGroq(
-        model=model,
-        groq_api_key=api_key,
-        temperature=0.4,
-        model_kwargs={"response_format": {"type": "json_object"}},
-    )
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
     # On retry, add a stricter instruction
     extra_instruction = ""
     if state.get("retry_count", 0) > 0:
         extra_instruction = (
             "\n\nPREVIOUS ATTEMPT FAILED: Your response was not valid JSON. "
-            "Return ONLY a raw JSON object. Do NOT use markdown code fences (```). "
-            "Do NOT include any text before or after the JSON object."
+            "Return ONLY a raw JSON object starting with { and ending with }. "
+            "Do NOT use markdown code fences (```). Do NOT include any text before or after the JSON object."
         )
 
     prompt = build_quiz_generation_prompt(
@@ -187,14 +226,35 @@ def generate_quiz(state: GenerateState) -> GenerateState:
     ) + extra_instruction
 
     try:
-        response = llm.invoke(prompt)
-        raw_output = response.content
-        if isinstance(raw_output, list):
-            raw_output = "".join(str(chunk) for chunk in raw_output)
+        raw_output = invoke_groq_safe(
+            prompt=prompt,
+            model=model,
+            api_key=api_key,
+            temperature=0.3,
+            max_tokens=6000,
+        )
+        return {**state, "raw_llm_output": str(raw_output), "error": None}
     except Exception as e:
-        return {**state, "error": f"LLM call failed: {str(e)}"}
+        err_msg = str(e)
+        retry_count = state.get("retry_count", 0)
+        if retry_count < 1:
+            return {
+                **state,
+                "retry_count": retry_count + 1,
+                "quiz": None,
+                "raw_llm_output": "",
+                "error": None,
+            }
 
-    return {**state, "raw_llm_output": str(raw_output)}
+        # User-friendly error message instead of raw dict dump
+        if "json_validate_failed" in err_msg or "Failed to validate JSON" in err_msg:
+            friendly_err = "Could not generate questions in valid format. Please try again."
+        elif "rate_limit" in err_msg.lower() or "429" in err_msg:
+            friendly_err = "AI service is currently busy. Please wait a moment and try again."
+        else:
+            friendly_err = f"Failed to generate quiz: {err_msg}"
+
+        return {**state, "error": friendly_err}
 
 
 def validate_quiz_json(state: GenerateState) -> GenerateState:
@@ -215,8 +275,9 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
                 "retry_count": retry_count + 1,
                 "quiz": None,
                 "raw_llm_output": "",
+                "error": None,
             }
-        return {**state, "error": f"Failed to parse LLM output as JSON: {str(e)}"}
+        return {**state, "error": f"Failed to parse quiz response. Please try again."}
 
     # Check Layer-2 Guardrail: Did LLM reject topic as nonsensical/invalid?
     if parsed.get("status") in ("invalid_topic", "invalid_content") or ("error" in parsed and not parsed.get("questions")):
@@ -238,8 +299,9 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
                 "retry_count": retry_count + 1,
                 "quiz": None,
                 "raw_llm_output": "",
+                "error": None,
             }
-        return {**state, "error": "LLM output missing 'questions' key after retry"}
+        return {**state, "error": "Generated response was missing questions. Please try again."}
 
     # Validate each question through Pydantic
     try:
@@ -269,15 +331,16 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
                 "retry_count": retry_count + 1,
                 "quiz": None,
                 "raw_llm_output": "",
+                "error": None,
             }
-        return {**state, "error": f"Quiz validation failed after retry: {str(e)}"}
+        return {**state, "error": f"Quiz validation failed: {str(e)}"}
 
 
 # ── Routing ──────────────────────────────────────────────────────────────────
 
 def should_retry_or_end(state: GenerateState) -> str:
     """Determine whether to retry generation or proceed to END."""
-    if state.get("error"):
+    if state.get("error") or state.get("guardrail_rejected"):
         return "end"
     if state.get("quiz") is None and state.get("retry_count", 0) > 0:
         # Need to retry — go back to generate_quiz

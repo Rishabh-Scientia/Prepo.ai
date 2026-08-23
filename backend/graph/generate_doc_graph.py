@@ -92,19 +92,57 @@ def _extract_json_dict(raw: str) -> dict:
     raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
 
 
+def invoke_groq_safe(
+    prompt: str,
+    model: str,
+    api_key: str,
+    temperature: float = 0.3,
+    max_tokens: int = 6000,
+) -> str:
+    """
+    Safely invoke Groq with automatic fallback.
+    1. First attempt: with response_format={"type": "json_object"}.
+    2. Fallback: if server-side json_validate_failed (HTTP 400) occurs,
+       re-invoke on the same model without response_format so LLM text
+       can be extracted and parsed by _extract_json_dict.
+    """
+    try:
+        llm = ChatGroq(
+            model=model,
+            groq_api_key=api_key,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model_kwargs={"response_format": {"type": "json_object"}},
+        )
+        response = llm.invoke(prompt)
+        raw = response.content
+        if isinstance(raw, list):
+            raw = "".join(str(chunk) for chunk in raw)
+        return str(raw)
+    except Exception as e:
+        err_msg = str(e)
+        if "json_validate_failed" in err_msg or "Failed to validate JSON" in err_msg or "400" in err_msg:
+            llm_fallback = ChatGroq(
+                model=model,
+                groq_api_key=api_key,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            response = llm_fallback.invoke(prompt)
+            raw = response.content
+            if isinstance(raw, list):
+                raw = "".join(str(chunk) for chunk in raw)
+            return str(raw)
+        raise
+
+
 def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
-    """Invoke Groq to generate quiz based on document text."""
+    """Invoke Groq to generate quiz based on document text with resilient fallback."""
     if state.get("error") or state.get("guardrail_rejected"):
         return state
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-    llm = ChatGroq(
-        model=model,
-        groq_api_key=api_key,
-        temperature=0.4,
-        model_kwargs={"response_format": {"type": "json_object"}},
-    )
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
     clean_text = truncate_document_text(state["document_text"])
 
@@ -119,15 +157,18 @@ def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
     if state.get("retry_count", 0) > 0:
         prompt += (
             "\n\nPREVIOUS ATTEMPT FAILED TO PARSE AS VALID JSON. "
-            "Return ONLY raw valid JSON matching the requested schema. No markdown code blocks."
+            "Return ONLY raw valid JSON starting with { and ending with }. No markdown code blocks."
         )
 
     try:
-        response = llm.invoke(prompt)
-        raw_output = response.content
-        if isinstance(raw_output, list):
-            raw_output = "".join(str(chunk) for chunk in raw_output)
-        return {**state, "raw_llm_output": str(raw_output)}
+        raw_output = invoke_groq_safe(
+            prompt=prompt,
+            model=model,
+            api_key=api_key,
+            temperature=0.3,
+            max_tokens=6000,
+        )
+        return {**state, "raw_llm_output": str(raw_output), "error": None}
     except Exception as e:
         err_str = str(e)
         if "413" in err_str or "Request too large" in err_str or "rate_limit_exceeded" in err_str or "TPM" in err_str or "tokens" in err_str.lower():
@@ -138,7 +179,20 @@ def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
                 "guardrail_message": friendly_msg,
                 "error": friendly_msg,
             }
-        return {**state, "error": f"LLM generation failed: {str(e)}"}
+        
+        retry_count = state.get("retry_count", 0)
+        if retry_count < 1:
+            return {
+                **state,
+                "error": "Failed to generate questions. Retrying...",
+            }
+            
+        if "json_validate_failed" in err_str or "Failed to validate JSON" in err_str:
+            friendly_err = "Could not generate questions from document. Please try again."
+        else:
+            friendly_err = f"Document quiz generation failed: {err_str}"
+            
+        return {**state, "error": friendly_err}
 
 
 def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:

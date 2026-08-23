@@ -55,10 +55,11 @@ Return JSON in this EXACT schema when valid:
       "type": "mcq",
       "question": "question text",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "Option A (must exactly match one of the 4 options)",
-      "difficulty": "easy" | "medium" | "hard"
+      "correct_answer": "Option A",
+      "difficulty": "medium"
     }}
   ]
 }}
 
+Note: "difficulty" must be one of "easy", "medium", or "hard".
 IMPORTANT: Return ONLY the raw JSON object. Do NOT use markdown fences (```json). Do NOT add preamble or commentary before or after."""

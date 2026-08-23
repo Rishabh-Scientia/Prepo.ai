@@ -1186,7 +1186,7 @@ function showError(message) {
 
     let displayMsg = message || "An unexpected error occurred. Please try again.";
 
-    // Intercept technical 413 / TPM / token / rate-limit JSON errors and show friendly message
+    // Intercept technical 413 / TPM / token / rate-limit / LLM JSON errors and show friendly message
     if (
         displayMsg.includes("413") ||
         displayMsg.includes("Request too large") ||
@@ -1196,6 +1196,12 @@ function showError(message) {
         (displayMsg.includes("Limit") && displayMsg.includes("Requested"))
     ) {
         displayMsg = "Document is too large. Please upload notes under 15–20 pages or a specific chapter.";
+    } else if (
+        displayMsg.includes("json_validate_failed") ||
+        displayMsg.includes("Failed to validate JSON") ||
+        displayMsg.includes("LLM call failed")
+    ) {
+        displayMsg = "Could not generate questions in valid format. Please try again.";
     }
 
     document.getElementById("error-message").textContent = displayMsg;

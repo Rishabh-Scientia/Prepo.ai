@@ -107,8 +107,52 @@ def _extract_json_dict(raw: str) -> dict:
     raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
 
 
+def invoke_groq_safe(
+    prompt: str,
+    model: str,
+    api_key: str,
+    temperature: float = 0.3,
+    max_tokens: int = 4096,
+) -> str:
+    """
+    Safely invoke Groq with automatic fallback.
+    1. First attempt: with response_format={"type": "json_object"}.
+    2. Fallback: if server-side json_validate_failed (HTTP 400) occurs,
+       re-invoke on the same model without response_format so LLM text
+       can be extracted and parsed by _extract_json_dict.
+    """
+    try:
+        llm = ChatGroq(
+            model=model,
+            groq_api_key=api_key,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model_kwargs={"response_format": {"type": "json_object"}},
+        )
+        response = llm.invoke(prompt)
+        raw = response.content
+        if isinstance(raw, list):
+            raw = "".join(str(chunk) for chunk in raw)
+        return str(raw)
+    except Exception as e:
+        err_msg = str(e)
+        if "json_validate_failed" in err_msg or "Failed to validate JSON" in err_msg or "400" in err_msg:
+            llm_fallback = ChatGroq(
+                model=model,
+                groq_api_key=api_key,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            response = llm_fallback.invoke(prompt)
+            raw = response.content
+            if isinstance(raw, list):
+                raw = "".join(str(chunk) for chunk in raw)
+            return str(raw)
+        raise
+
+
 def generate_explanations(state: EvaluateState) -> EvaluateState:
-    """Call Groq to generate 4-part explanations for all questions."""
+    """Call Groq to generate 4-part explanations for all questions with fallback."""
 
     if state.get("error"):
         return state
@@ -117,24 +161,18 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
     language = state.get("language", "English")
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_EVAL_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
-    llm = ChatGroq(
-        model=model,
-        groq_api_key=api_key,
-        temperature=0.3,
-        max_tokens=2048,
-        model_kwargs={"response_format": {"type": "json_object"}},
-    )
+    model = os.getenv("GROQ_EVAL_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"))
 
     prompt = build_explanation_prompt(scored, language)
 
     try:
-        response = llm.invoke(prompt)
-        raw = response.content
-        if isinstance(raw, list):
-            raw = "".join(str(chunk) for chunk in raw)
-        raw = str(raw).strip()
-
+        raw = invoke_groq_safe(
+            prompt=prompt,
+            model=model,
+            api_key=api_key,
+            temperature=0.3,
+            max_tokens=4096,
+        )
         parsed = _extract_json_dict(raw)
         explanations_map = parsed.get("explanations", {})
 

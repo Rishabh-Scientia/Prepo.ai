@@ -44,13 +44,14 @@ Return JSON in this exact schema when valid:
     {{
       "id": "q1",
       "type": "mcq",
-      "question": "string",
+      "question": "Question text here",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "Option A (must exactly match one option)",
-      "difficulty": "easy" | "medium" | "hard"
+      "correct_answer": "Option A",
+      "difficulty": "medium"
     }}
   ]
 }}
 
+Note: "difficulty" must be one of "easy", "medium", or "hard".
 IMPORTANT: Return ONLY the raw JSON object. Do NOT wrap it in ```json``` or any other formatting. Do NOT include any text before or after the JSON."""
 
