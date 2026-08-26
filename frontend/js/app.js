@@ -555,6 +555,9 @@ function renderQuizAttempt(config) {
         })
         .join("");
 
+    // Render mathematical formulas via KaTeX
+    renderMath(container);
+
     // Render navigation grid
     navGrid.innerHTML = state.questions
         .map(
@@ -670,6 +673,9 @@ async function downloadQuizPdf() {
             Generated via Prepo.ai — AI Powered Practice & Learning Platform
         </div>
     `;
+
+    // Render mathematical formulas in PDF container
+    renderMath(pdfContainer);
 
     // Download button feedback
     const btn = document.getElementById("download-pdf-btn");
@@ -941,6 +947,9 @@ function renderResults(data) {
             `;
         })
         .join("");
+
+    // Render mathematical formulas in results & explanations
+    renderMath(container);
 }
 
 function toggleResult(questionId) {
@@ -1239,6 +1248,39 @@ function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+}
+
+/**
+ * Render mathematical expressions in the given DOM container using KaTeX auto-render.
+ */
+function renderMath(element) {
+    if (!element) return;
+    const render = () => {
+        if (typeof renderMathInElement === "function") {
+            try {
+                renderMathInElement(element, {
+                    delimiters: [
+                        { left: "$$", right: "$$", display: true },
+                        { left: "\\[", right: "\\]", display: true },
+                        { left: "$", right: "$", display: false },
+                        { left: "\\(", right: "\\)", display: false }
+                    ],
+                    throwOnError: false,
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+                });
+            } catch (err) {
+                console.warn("KaTeX rendering notice:", err);
+            }
+        }
+    };
+
+    if (typeof renderMathInElement === "function") {
+        render();
+    } else {
+        // Fallback retry if KaTeX script is deferred
+        setTimeout(render, 150);
+        setTimeout(render, 500);
+    }
 }
 
 function truncate(str, maxLen) {

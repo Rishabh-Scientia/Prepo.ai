@@ -44,6 +44,11 @@ For EACH question, produce a JSON object with these four fields:
 3. "reasoning": a step-by-step explanation of why the correct answer is right.
 4. "why_incorrect_option_wrong": if the student was wrong, explain specifically why their selected option is wrong or misleading (name the specific misconception/error type). If the student was correct, briefly note the most common mistake others make on this question instead.
 
+MATHEMATICAL & SCIENTIFIC FORMULAS:
+- Whenever explaining mathematical formulas, steps, derivations, equations, fractions, powers, roots, or trigonometric expressions:
+  ALWAYS use standard LaTeX syntax enclosed in `$ ... $` (e.g. `$\\tan^{{-1}} x$`, `$\\frac{{\\pi}}{{4}}$`, `$\\sin^2\\theta + \\cos^2\\theta = 1$`).
+- Ensure all LaTeX backslashes inside JSON strings are properly escaped (e.g. `\\frac`, `\\pi`, `\\theta`, `\\sqrt`).
+
 Return ONLY a valid JSON object with this exact structure — no markdown fences, no extra text:
 {{
   "explanations": {{

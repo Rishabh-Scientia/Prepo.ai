@@ -738,3 +738,38 @@ a {
 .hidden {
     display: none !important;
 }
+
+/* ── KaTeX Mathematical Formula Styling ──────────────────────────────── */
+.katex {
+    font-size: 1.06em;
+    text-rendering: auto;
+}
+
+.katex-display {
+    margin: 0.6em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 4px;
+}
+
+.katex-display > .katex {
+    text-align: center;
+}
+
+.option-btn .katex {
+    font-size: 1.04em;
+    vertical-align: middle;
+}
+
+.option-btn .katex-display {
+    margin: 0.2em 0;
+}
+
+.q-text .katex-display,
+.explanation-section .katex-display {
+    background: #f8fafc;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
