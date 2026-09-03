@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import QuestionCard from './QuestionCard';
 import QuestionPalette from './QuestionPalette';
 import { Clock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
@@ -204,62 +205,69 @@ export function QuizAttempt({
       </div>
 
       {/* ── SUBMIT CONFIRMATION MODAL ── */}
-      {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-card border border-surface-200 shadow-elevated w-full max-w-md overflow-hidden animate-scaleUp p-6">
-            <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center mx-auto mb-4 border border-primary-200">
+      {showSubmitModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setShowSubmitModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-md overflow-hidden animate-scaleUp p-6 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mx-auto mb-4 border border-primary-200 shadow-sm">
               <Sparkles className="w-6 h-6" />
             </div>
 
-            <h3 className="text-lg font-bold text-gray-900 text-center">Ready to Submit?</h3>
+            <h3 className="text-xl font-bold text-gray-900 text-center tracking-tight">Ready to Submit?</h3>
             
-            <div className="my-4 p-3.5 bg-surface-50 rounded-card border border-surface-200 space-y-2 text-xs">
+            <div className="my-5 p-4 bg-surface-50 rounded-xl border border-surface-200 space-y-2.5 text-xs">
               <div className="flex justify-between font-medium text-gray-700">
                 <span>Total Questions:</span>
-                <span className="font-bold">{questions.length}</span>
+                <span className="font-bold text-gray-900">{questions.length}</span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-semibold">
+              <div className="flex justify-between text-emerald-700 font-bold">
                 <span>Answered Questions:</span>
                 <span>{answeredCount}</span>
               </div>
               {unansweredCount > 0 && (
-                <div className="flex justify-between text-amber-700 font-semibold">
+                <div className="flex justify-between text-amber-700 font-bold">
                   <span>Unanswered Questions:</span>
                   <span>{unansweredCount}</span>
                 </div>
               )}
-              <div className="flex justify-between text-gray-600 pt-1 border-t border-surface-200">
+              <div className="flex justify-between text-gray-600 pt-2 border-t border-surface-200 font-medium">
                 <span>Time Taken:</span>
-                <span>{formatTime(secondsElapsed)}</span>
+                <span className="font-mono font-bold text-gray-800">{formatTime(secondsElapsed)}</span>
               </div>
             </div>
 
             {unansweredCount > 0 && (
-              <p className="text-xs text-amber-600 flex items-center gap-1.5 mb-4">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center gap-2 mb-5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>You have unattempted questions. They will be marked as incorrect.</span>
               </p>
             )}
 
-            <div className="flex gap-2.5">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-2 text-xs font-bold text-gray-700 bg-white border border-surface-300 rounded-card hover:bg-surface-100 transition"
+                className="flex-1 py-2.5 text-xs font-bold text-gray-700 bg-white border border-surface-300 rounded-xl hover:bg-surface-100 transition shadow-sm"
               >
                 Review Answers
               </button>
               <button
                 type="button"
                 onClick={handleFinalSubmit}
-                className="flex-1 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-card transition shadow-sm flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition shadow-sm hover:shadow-md flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Confirm & Submit</span>
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

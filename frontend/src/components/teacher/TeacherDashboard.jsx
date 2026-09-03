@@ -25,6 +25,7 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   const [selectedLeaderboardQuiz, setSelectedLeaderboardQuiz] = useState(null);
   const [selectedShareQuizId, setSelectedShareQuizId] = useState(null);
   const [quizToDelete, setQuizToDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadTeacherQuizzes = async () => {
     try {
@@ -59,14 +60,17 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
 
   const handleDeleteConfirm = async () => {
     if (!quizToDelete) return;
+    const targetId = quizToDelete.id;
+    setDeletingId(targetId);
     try {
-      await api.deleteSharedQuiz(quizToDelete.id);
-      setQuizzes((prev) => prev.filter((q) => q.id !== quizToDelete.id));
+      await api.deleteSharedQuiz(targetId);
+      setQuizzes((prev) => prev.filter((q) => q.id !== targetId));
       if (onShowToast) onShowToast('Shared quiz deleted successfully', 'success');
     } catch (err) {
       if (onShowToast) onShowToast(err.message || 'Could not delete quiz', 'error');
     } finally {
       setQuizToDelete(null);
+      setDeletingId(null);
     }
   };
 
@@ -245,12 +249,13 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
       {quizToDelete && (
         <ConfirmModal
           isOpen={!!quizToDelete}
-          title="Delete Shared Quiz"
+          title="Delete Shared Quiz?"
           description={`Are you sure you want to delete "${quizToDelete.subject} - ${quizToDelete.chapter}"? Students will no longer be able to submit responses.`}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setQuizToDelete(null)}
           confirmText="Delete Quiz"
           isDanger={true}
+          isLoading={deletingId !== null}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { processPayment } from '../../services/payment';
@@ -24,6 +25,28 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
     }
   }, [isBuyCreditsModalOpen]);
 
+  useEffect(() => {
+    if (!isBuyCreditsModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !purchasingPlanId) {
+        closeBuyCreditsModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isBuyCreditsModalOpen, purchasingPlanId, closeBuyCreditsModal]);
+
+  useEffect(() => {
+    if (isBuyCreditsModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isBuyCreditsModalOpen]);
+
   const loadPlans = async () => {
     try {
       setLoading(true);
@@ -31,7 +54,6 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
       if (data && data.plans && data.plans.length > 0) {
         setPlans(data.plans);
       } else {
-        // Fallback default plans matching backend schema
         setPlans([
           { plan_id: 'plan_30', name: 'Starter Pack', amount: 900, currency: 'INR', credits: 30, price_display: '₹9', per_quiz: '₹0.30', description: '30 AI Quiz Generations', badge: 'Starter', popular: false },
           { plan_id: 'plan_100', name: 'Pro Pack', amount: 2900, currency: 'INR', credits: 100, price_display: '₹29', per_quiz: '₹0.29', description: '100 AI Quiz Generations', badge: 'Best Value', popular: true },
@@ -76,28 +98,39 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
     });
   };
 
-  if (!isBuyCreditsModalOpen) return null;
+  if (!isBuyCreditsModalOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-lg border border-surface-200 shadow-elevated w-full max-w-xl overflow-hidden animate-scaleUp">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      onClick={() => {
+        if (!purchasingPlanId) closeBuyCreditsModal();
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-xl overflow-hidden animate-scaleUp text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-primary-600 to-primary-700 text-white flex items-center justify-between">
+        <div className="px-6 py-5 bg-gradient-to-r from-primary-600 via-primary-700 to-blue-700 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
-              <Coins className="w-5 h-5 text-amber-300" />
+            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+              <Coins className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Top Up Quiz Credits</h2>
+              <h2 className="text-lg font-extrabold tracking-tight">Top Up Quiz Credits</h2>
               <p className="text-xs text-primary-100">
                 You currently have <span className="font-bold text-amber-300">{credits} credits</span> remaining
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={closeBuyCreditsModal}
-            className="text-white/80 hover:text-white p-1 rounded transition"
+            disabled={purchasingPlanId !== null}
+            className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -106,9 +139,9 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
         {/* Pricing Cards */}
         <div className="p-6">
           {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center gap-3 text-gray-500">
-              <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
-              <span className="text-sm">Loading available credit packs...</span>
+            <div className="py-14 flex flex-col items-center justify-center gap-3 text-gray-500">
+              <Loader2 className="w-7 h-7 animate-spin text-primary-600" />
+              <span className="text-sm font-medium">Loading available credit packs...</span>
             </div>
           ) : (
             <div className={`grid gap-4 ${plans.length >= 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
@@ -120,16 +153,16 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
                 return (
                   <div
                     key={planId}
-                    className={`relative rounded-lg border-2 transition p-5 flex flex-col justify-between ${
+                    className={`relative rounded-2xl border-2 transition-all p-5 flex flex-col justify-between ${
                       plan.popular
-                        ? 'border-primary-500 bg-primary-50/30 shadow-md ring-1 ring-primary-500/30'
+                        ? 'border-primary-500 bg-primary-50/40 shadow-md ring-2 ring-primary-500/20'
                         : 'border-surface-200 bg-white hover:border-primary-300 hover:shadow-subtle'
                     }`}
                   >
                     {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap">
-                        <Sparkles className="w-3 h-3" />
-                        {plan.badge || 'Most Popular'}
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-[10px] font-extrabold uppercase tracking-wider px-3.5 py-0.5 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap">
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        {plan.badge || 'Best Value'}
                       </div>
                     )}
 
@@ -148,7 +181,7 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
                       <div className="mt-3 flex items-baseline gap-2">
                         <span className="text-3xl font-extrabold text-gray-900">{priceInRupees}</span>
                         {perQuiz && (
-                          <span className="text-xs text-gray-500 font-medium">({perQuiz}/quiz)</span>
+                          <span className="text-xs text-gray-500 font-semibold">({perQuiz}/quiz)</span>
                         )}
                       </div>
 
@@ -177,9 +210,9 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
                       type="button"
                       onClick={() => handleBuy(plan)}
                       disabled={purchasingPlanId !== null}
-                      className={`mt-6 w-full py-2.5 px-3 text-sm font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-sm ${
+                      className={`mt-6 w-full py-2.5 px-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm ${
                         plan.popular
-                          ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                          ? 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-primary-200 hover:shadow-md'
                           : 'bg-gray-900 hover:bg-gray-800 text-white'
                       }`}
                     >
@@ -208,7 +241,8 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

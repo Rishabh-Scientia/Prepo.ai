@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { X, Mail, Lock, User, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -21,7 +22,27 @@ export function SignUpModal() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  if (!isAuthModalOpen || authModalMode !== 'signup') return null;
+  useEffect(() => {
+    if (!isAuthModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeAuthModal();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuthModalOpen, closeAuthModal]);
+
+  useEffect(() => {
+    if (isAuthModalOpen && authModalMode === 'signup') {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAuthModalOpen, authModalMode]);
+
+  if (!isAuthModalOpen || authModalMode !== 'signup' || typeof document === 'undefined') return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,19 +90,26 @@ export function SignUpModal() {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-card border border-surface-200 shadow-elevated w-full max-w-md overflow-hidden animate-scaleUp">
-        
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      onClick={closeAuthModal}
+    >
+      <div 
+        className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-md overflow-hidden animate-scaleUp text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-5 border-b border-surface-100 flex items-center justify-between">
+        <div className="p-6 border-b border-surface-100 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Create your Prepo.ai Account</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Start generating personalized AI tests for free</p>
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Create your Account</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Start generating personalized AI tests with Prepo.ai</p>
           </div>
           <button 
+            type="button"
             onClick={closeAuthModal} 
-            className="text-gray-400 hover:text-gray-600 p-1 rounded transition"
+            className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-surface-100 transition-colors"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -89,25 +117,25 @@ export function SignUpModal() {
 
         <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 rounded-card bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
+            <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 rounded-card bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-700">
+            <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-700">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
               <span>{success}</span>
             </div>
           )}
 
-          {/* Google Login Button */}
+          {/* Google Signup Button */}
           <button
             type="button"
             onClick={handleGoogleAuth}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-surface-300 rounded-card bg-white hover:bg-surface-50 text-sm font-semibold text-gray-700 transition shadow-subtle mb-4"
+            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-surface-300 rounded-xl bg-white hover:bg-surface-50 text-sm font-semibold text-gray-700 transition shadow-sm mb-4"
           >
             {googleLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-gray-600" />
@@ -136,75 +164,75 @@ export function SignUpModal() {
 
           <div className="relative flex items-center justify-center my-4">
             <div className="border-t border-surface-200 w-full"></div>
-            <span className="bg-white px-2 text-xs text-gray-400 font-medium uppercase tracking-wider">or</span>
+            <span className="bg-white px-3 text-xs text-gray-400 font-bold uppercase tracking-wider">or</span>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
                 Full Name
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. Alex Kumar"
                   required
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-surface-300 rounded-card focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-surface-300 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-surface-300 rounded-card focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-surface-300 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
                   required
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-surface-300 rounded-card focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-surface-300 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat your password"
                   required
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-surface-300 rounded-card focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-surface-300 rounded-xl focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
             </div>
@@ -212,7 +240,7 @@ export function SignUpModal() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-card transition shadow-sm flex items-center justify-center gap-2"
+              className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>{loading ? 'Creating account...' : 'Create Account'}</span>
@@ -225,14 +253,15 @@ export function SignUpModal() {
             <button
               type="button"
               onClick={openSignIn}
-              className="text-primary-600 font-semibold hover:underline"
+              className="text-primary-600 font-bold hover:underline"
             >
               Sign In
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
