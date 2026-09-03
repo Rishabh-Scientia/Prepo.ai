@@ -66,6 +66,34 @@ def validate_doc_input(state: GenerateDocState) -> GenerateDocState:
     return state
 
 
+LATEX_COMMANDS = {
+    "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota",
+    "kappa", "lambda", "mu", "nu", "xi", "pi", "rho", "sigma", "tau", "upsilon",
+    "phi", "chi", "psi", "omega", "Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi",
+    "Sigma", "Upsilon", "Phi", "Psi", "Omega",
+    "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+    "sinh", "cosh", "tanh", "coth", "log", "ln", "lim", "exp", "max", "min",
+    "frac", "dfrac", "tfrac", "sqrt", "int", "iint", "iiint", "oint", "sum", "prod",
+    "partial", "nabla", "infty", "cdot", "times", "div", "pm", "mp", "approx",
+    "neq", "le", "ge", "leq", "geq", "equiv", "sim", "propto", "subset", "subseteq",
+    "cup", "cap", "in", "notin", "forall", "exists", "to", "rightarrow", "leftarrow",
+    "Rightarrow", "Leftarrow", "Leftrightarrow", "implies", "iff",
+    "text", "textbf", "textit", "mathrm", "mathbf", "mathit", "vec", "hat", "bar",
+    "dot", "ddot", "tilde", "overline", "underline", "left", "right", "begin", "end"
+}
+_LATEX_PATTERN = "|".join(sorted(LATEX_COMMANDS, key=len, reverse=True))
+_LATEX_REGEX = re.compile(rf"(?<!\\)\\({_LATEX_PATTERN})(?![a-zA-Z])")
+
+
+def _sanitize_json_latex(text: str) -> str:
+    """
+    Ensure LaTeX commands like \\frac, \\times, \\theta inside raw JSON strings
+    are double-escaped so json.loads does not parse \\f into form feed (\\x0c)
+    or \\t into tab (\\x09) or \\b into backspace (\\x08).
+    """
+    return _LATEX_REGEX.sub(r"\\\\\1", text)
+
+
 def _extract_json_dict(raw: str) -> dict:
     """Robustly extract and parse JSON object from LLM response."""
     if not raw or not raw.strip():
@@ -77,12 +105,25 @@ def _extract_json_dict(raw: str) -> dict:
     cleaned = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
     cleaned = re.sub(r"\s*```$", "", cleaned).strip()
 
+    # 2. Sanitize LaTeX commands in raw JSON text to preserve backslashes
+    sanitized = _sanitize_json_latex(cleaned)
+
     try:
-        return json.loads(cleaned)
+        return json.loads(sanitized)
     except Exception:
         pass
 
-    # 2. Extract substring between outermost { and }
+    # 3. Extract substring between outermost { and }
+    start = sanitized.find("{")
+    end = sanitized.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = sanitized[start : end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # 4. Fallback on original text if needed
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
@@ -235,7 +276,12 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
     validated_questions = []
     for i, q in enumerate(questions):
         qid = q.get("id") or f"q{i+1}"
-        question_text = q.get("question", "").strip()
+        question_text = str(q.get("question", "")).replace("\x0c", r"\f").replace("\x08", r"\b").strip()
+        question_text = re.sub(r"(?<!\\)int_", r"\\int_", question_text)
+        question_text = re.sub(r"(?<!\\)sum_", r"\\sum_", question_text)
+        question_text = re.sub(r"(?<!\\)lim_", r"\\lim_", question_text)
+        question_text = re.sub(r"(?<!\\)frac\{", r"\\frac{", question_text)
+        question_text = re.sub(r"(?<!\\)sqrt\{", r"\\sqrt{", question_text)
         options = q.get("options", [])
         correct_answer = q.get("correct_answer", "").strip()
         diff = q.get("difficulty", "medium").lower()
@@ -250,8 +296,14 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
         # Auto-wrap and normalize LaTeX in options and correct_answer
         cleaned_options = []
         for opt in options:
-            opt_str = re.sub(r"\s+", " ", str(opt)).strip()
+            opt_str = str(opt).replace("\x0c", r"\f").replace("\x08", r"\b")
+            opt_str = re.sub(r"\s+", " ", opt_str).strip()
             opt_str = opt_str.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+            opt_str = re.sub(r"(?<!\\)int_", r"\\int_", opt_str)
+            opt_str = re.sub(r"(?<!\\)sum_", r"\\sum_", opt_str)
+            opt_str = re.sub(r"(?<!\\)lim_", r"\\lim_", opt_str)
+            opt_str = re.sub(r"(?<!\\)frac\{", r"\\frac{", opt_str)
+            opt_str = re.sub(r"(?<!\\)sqrt\{", r"\\sqrt{", opt_str)
             # Auto-prefix bare trig & greek words if backslash is missing
             opt_str = re.sub(
                 r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
@@ -262,8 +314,14 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
                 opt_str = f"${opt_str}$"
             cleaned_options.append(opt_str)
 
-        corr = re.sub(r"\s+", " ", str(correct_answer)).strip()
+        corr = str(correct_answer).replace("\x0c", r"\f").replace("\x08", r"\b")
+        corr = re.sub(r"\s+", " ", corr).strip()
         corr = corr.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+        corr = re.sub(r"(?<!\\)int_", r"\\int_", corr)
+        corr = re.sub(r"(?<!\\)sum_", r"\\sum_", corr)
+        corr = re.sub(r"(?<!\\)lim_", r"\\lim_", corr)
+        corr = re.sub(r"(?<!\\)frac\{", r"\\frac{", corr)
+        corr = re.sub(r"(?<!\\)sqrt\{", r"\\sqrt{", corr)
         corr = re.sub(
             r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
             r"\\\1",

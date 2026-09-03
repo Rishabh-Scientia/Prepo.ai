@@ -4,10 +4,11 @@ import 'katex/dist/contrib/auto-render';
 
 /**
  * Normalizes mathematical text:
- * 1. Strips unwanted newlines in single-line math expressions.
- * 2. Replaces block delimiters ($$...$$, \[...\]) with inline delimiters so formulas don't split onto multiple lines.
+ * 1. Restores corrupted JSON escape characters (\x0c Form Feed -> \f for \frac, \x08 -> \b, \t -> \t).
+ * 2. Strips unwanted newlines in single-line math expressions.
  * 3. Converts common text trigonometric/Greek words (theta, alpha, beta, etc.) into LaTeX commands (\theta, \alpha, \beta).
- * 4. Ensures bare formulas (e.g. \sin^2\theta + \cos^2\theta = 1, or 2.26\times10^8\,\text{m/s}) are cleanly wrapped and rendered inline.
+ * 4. Replaces block delimiters ($$...$$, \[...\]) with inline delimiters so formulas don't split onto multiple lines.
+ * 5. Auto-wraps bare LaTeX expressions in mixed sentences into $...$ so KaTeX auto-renders them cleanly.
  */
 function normalizeMathText(str) {
   if (!str || typeof str !== 'string') return '';
@@ -15,11 +16,21 @@ function normalizeMathText(str) {
   // Replace newlines with spaces so formulas stay on one line
   let s = str.replace(/\r?\n+/g, ' ').trim();
 
-  // Convert display/block delimiters ($$ or \[ \]) to inline ($) so options NEVER break into multiple lines
-  s = s.replace(/\$\$(.*?)\$\$/g, '$$$1$$');
-  s = s.replace(/\\\[(.*?)\\\]/g, '$$$1$$');
+  // 1. Repair control characters corrupted by raw JSON parsing
+  s = s.replace(/\x0c/g, '\\f');                       // Form feed (\x0c) -> \f (fixes \frac)
+  s = s.replace(/\x08/g, '\\b');                       // Backspace (\x08) -> \b (fixes \beta, \bar)
+  s = s.replace(/\t(heta|imes|ext|an|au|riangle)/g, '\\t$1'); // Tab (\x09) -> \t (fixes \theta, \times, \text, \tan)
+  s = s.replace(/(?<!\\)int_/g, '\\int_');             // Lone int_ -> \int_
+  s = s.replace(/(?<!\\)sum_/g, '\\sum_');             // Lone sum_ -> \sum_
+  s = s.replace(/(?<!\\)lim_/g, '\\lim_');             // Lone lim_ -> \lim_
+  s = s.replace(/(?<!\\)sqrt\{/g, '\\sqrt{');          // Lone sqrt{ -> \sqrt{
+  s = s.replace(/(?<!\\)frac\{/g, '\\frac{');          // Lone frac{ -> \frac{
 
-  // Auto-convert common math words to LaTeX if backslash was missed by the LLM
+  // 2. Convert display/block delimiters ($$ or \[ \]) to inline ($) so options NEVER break into multiple lines
+  s = s.replace(/\$\$([\s\S]*?)\$\$/g, '$$$1$$');
+  s = s.replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$');
+
+  // 3. Auto-convert common math words to LaTeX if backslash was missed by the LLM
   // e.g. "sin^2 theta" -> "\sin^2 \theta"
   const greekAndMathWords = [
     'theta', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'lambda', 'mu', 'pi', 'sigma', 'omega', 'phi', 'psi',
@@ -30,6 +41,17 @@ function normalizeMathText(str) {
     const regex = new RegExp(`(?<!\\\\)\\b${word}\\b`, 'g');
     s = s.replace(regex, `\\${word}`);
   }
+
+  // 4. Auto-wrap bare LaTeX expressions in mixed sentences
+  // e.g. "What is \frac{d}{dx}\int_{0}^{x} f(t),dt?" -> "What is $\frac{d}{dx}\int_{0}^{x} f(t),dt$?"
+  const parts = s.split(/(\$[^\$]+\$)/g);
+  s = parts.map((part) => {
+    if (part.startsWith('$') && part.endsWith('$')) return part;
+    return part.replace(/(\\[a-zA-Z]+[a-zA-Z0-9\s\\\{\}\^\_\+\-\*\/\(\)\,\=\.]*?)(?=[\?\!\:\;]?(?:\s+[A-Za-z]{3,}|\s*$|\?|\!|$))/g, (m) => {
+      const trimmed = m.trim();
+      return trimmed ? `$${trimmed}$` : m;
+    });
+  }).join('');
 
   return s;
 }
