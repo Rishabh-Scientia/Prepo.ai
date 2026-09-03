@@ -102,7 +102,87 @@ def evaluate_answers(state: EvaluateState) -> EvaluateState:
     }
 
 
-import re
+LATEX_COMMANDS = {
+    "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota",
+    "kappa", "lambda", "mu", "nu", "xi", "pi", "rho", "sigma", "tau", "upsilon",
+    "phi", "chi", "psi", "omega", "Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi",
+    "Sigma", "Upsilon", "Phi", "Psi", "Omega",
+    "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+    "sinh", "cosh", "tanh", "coth", "log", "ln", "lim", "exp", "max", "min",
+    "frac", "dfrac", "tfrac", "sqrt", "int", "iint", "iiint", "oint", "sum", "prod",
+    "partial", "nabla", "infty", "cdot", "times", "div", "pm", "mp", "approx",
+    "neq", "le", "ge", "leq", "geq", "equiv", "sim", "propto", "subset", "subseteq",
+    "cup", "cap", "in", "notin", "forall", "exists", "to", "rightarrow", "leftarrow",
+    "Rightarrow", "Leftarrow", "Leftrightarrow", "implies", "iff",
+    "text", "textbf", "textit", "mathrm", "mathbf", "mathit", "vec", "hat", "bar",
+    "dot", "ddot", "tilde", "overline", "underline", "left", "right", "begin", "end"
+}
+_LATEX_PATTERN = "|".join(sorted(LATEX_COMMANDS, key=len, reverse=True))
+_LATEX_REGEX = re.compile(rf"(?<!\\)\\({_LATEX_PATTERN})(?![a-zA-Z])")
+
+
+def _sanitize_json_latex(text: str) -> str:
+    """
+    Ensure LaTeX commands like \\frac, \\times, \\theta inside raw JSON strings
+    are double-escaped so json.loads does not parse \\f into form feed (\\x0c)
+    or \\t into tab (\\x09) or \\b into backspace (\\x08).
+    """
+    return _LATEX_REGEX.sub(r"\\\\\1", text)
+
+
+def _clean_explanation_field(val: Any) -> str:
+    """Clean and restore LaTeX control characters from an explanation field."""
+    if not val:
+        return ""
+    s = str(val).replace("\x0c", r"\f").replace("\x08", r"\b")
+    s = re.sub(r"(?<!\\)int_", r"\\int_", s)
+    s = re.sub(r"(?<!\\)sum_", r"\\sum_", s)
+    s = re.sub(r"(?<!\\)lim_", r"\\lim_", s)
+    s = re.sub(r"(?<!\\)frac\{", r"\\frac{", s)
+    s = re.sub(r"(?<!\\)sqrt\{", r"\\sqrt{", s)
+    return s.strip()
+
+
+def find_explanation_for_question(explanations_map: dict, qid: str, index: int) -> dict:
+    """
+    Intelligently find the explanation object for a question from LLM output.
+    Handles:
+    - Exact match: "q4"
+    - Case-insensitive: "Q4", "q4"
+    - Numeric index: "4", 4, index (3 or 4)
+    - Named prefix: "question_4", "Question 4", "Question4"
+    - Fallback by positional index in list/dict values
+    """
+    if not isinstance(explanations_map, dict):
+        return {}
+
+    # 1. Exact match
+    if qid in explanations_map and isinstance(explanations_map[qid], dict):
+        return explanations_map[qid]
+
+    # 2. Case-insensitive
+    qid_lower = str(qid).lower().strip()
+    for k, v in explanations_map.items():
+        if str(k).lower().strip() == qid_lower and isinstance(v, dict):
+            return v
+
+    # 3. Numeric extraction: "q4" -> "4"
+    num_match = re.search(r"\d+", str(qid))
+    if num_match:
+        q_num = num_match.group(0)
+        # Check "4", 4, "Question 4", "question_4"
+        for k, v in explanations_map.items():
+            k_str = str(k).lower().strip()
+            k_num = re.search(r"\d+", k_str)
+            if k_num and k_num.group(0) == q_num and isinstance(v, dict):
+                return v
+
+    # 4. By positional index
+    values = [v for v in explanations_map.values() if isinstance(v, dict)]
+    if index < len(values):
+        return values[index]
+
+    return {}
 
 
 def _extract_json_dict(raw: str) -> dict:
@@ -116,18 +196,30 @@ def _extract_json_dict(raw: str) -> dict:
     cleaned = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
     cleaned = re.sub(r"\s*```$", "", cleaned).strip()
 
+    # 2. Sanitize LaTeX commands in raw JSON text to preserve backslashes
+    sanitized = _sanitize_json_latex(cleaned)
+
     try:
-        return json.loads(cleaned)
+        return json.loads(sanitized)
     except Exception:
         pass
 
-    # 2. Extract substring between outermost { and }
+    # 3. Extract substring between outermost { and }
+    start = sanitized.find("{")
+    end = sanitized.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = sanitized[start : end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # 4. Fallback on original text if needed
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
         candidate = text[start : end + 1]
         return json.loads(candidate)
-
     raise ValueError(f"No JSON object found in LLM output: {text[:120]}...")
 
 
@@ -176,7 +268,7 @@ def invoke_groq_safe(
 
 
 def generate_explanations(state: EvaluateState) -> EvaluateState:
-    """Call Groq to generate 4-part explanations for all questions with fallback."""
+    """Generate 4-part explanations for all questions using LLM."""
 
     if state.get("error"):
         return state
@@ -189,6 +281,7 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
 
     prompt = build_explanation_prompt(scored, language)
 
+    explanations_map = {}
     try:
         raw = invoke_groq_safe(
             prompt=prompt,
@@ -198,30 +291,55 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
             max_tokens=4096,
         )
         parsed = _extract_json_dict(raw)
-        explanations_map = parsed.get("explanations", {})
+
+        # Robustly extract explanations_map from parsed dict
+        raw_exp = parsed.get("explanations")
+        if isinstance(raw_exp, dict):
+            explanations_map = raw_exp
+        elif isinstance(raw_exp, list):
+            temp_map = {}
+            for exp in raw_exp:
+                if isinstance(exp, dict):
+                    k = exp.get("question_id") or exp.get("id")
+                    if k:
+                        temp_map[str(k)] = exp
+            explanations_map = temp_map
+        elif isinstance(parsed, dict):
+            explanations_map = parsed
 
     except Exception as e:
-        # If explanation generation fails, provide fallback explanations
-        explanations_map = {}
-        for item in scored:
-            explanations_map[item["question_id"]] = {
-                "confirmation": "Correct!" if item["is_correct"] else "Incorrect.",
-                "core_concept": "Explanation could not be generated at this time.",
-                "reasoning": "Please review the correct answer and try to understand the concept.",
-                "why_incorrect_option_wrong": "Explanation unavailable due to a temporary error.",
-            }
-
+        print(f"Explanation generation warning: {e}")
 
     # Merge explanations into scored results
-    for item in scored:
+    for i, item in enumerate(scored):
         qid = item["question_id"]
-        explanation = explanations_map.get(qid, {
-            "confirmation": "Correct!" if item["is_correct"] else "Incorrect.",
-            "core_concept": "Explanation not available.",
-            "reasoning": "Explanation not available.",
-            "why_incorrect_option_wrong": "Explanation not available.",
-        })
-        item["explanation"] = explanation
+        exp_data = find_explanation_for_question(explanations_map, qid, i)
+
+        confirmation = _clean_explanation_field(exp_data.get("confirmation"))
+        if not confirmation:
+            confirmation = "Correct!" if item["is_correct"] else "Incorrect."
+
+        core_concept = _clean_explanation_field(exp_data.get("core_concept"))
+        if not core_concept:
+            core_concept = f"Core concept for question: {item.get('question_text', '')[:70]}"
+
+        reasoning = _clean_explanation_field(exp_data.get("reasoning"))
+        if not reasoning:
+            reasoning = f"The correct answer is {item.get('correct_answer', '')}."
+
+        why_wrong = _clean_explanation_field(exp_data.get("why_incorrect_option_wrong"))
+        if not why_wrong:
+            if item["is_correct"]:
+                why_wrong = "Good job selecting the correct option! Always double check your steps."
+            else:
+                why_wrong = f"Selected option '{item.get('selected_option', '')}' is incorrect. Review the step-by-step reasoning."
+
+        item["explanation"] = {
+            "confirmation": confirmation,
+            "core_concept": core_concept,
+            "reasoning": reasoning,
+            "why_incorrect_option_wrong": why_wrong,
+        }
 
     return {**state, "scored_results": scored}
 
