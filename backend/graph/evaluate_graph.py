@@ -53,10 +53,34 @@ def evaluate_answers(state: EvaluateState) -> EvaluateState:
     correct_count = 0
     total = len(quiz["questions"])
 
+    letter_indices = {"A": 0, "B": 1, "C": 2, "D": 3}
+
     for q in quiz["questions"]:
         qid = q["id"]
         selected = answer_map.get(qid, "")
-        is_correct = selected == q["correct_answer"]
+        correct = q.get("correct_answer", "")
+        options = q.get("options", [])
+
+        is_correct = False
+        normalized_selected = selected
+
+        if selected:
+            # 1. Direct match with correct answer
+            if selected.strip() == correct.strip():
+                is_correct = True
+                normalized_selected = correct
+            # 2. If client passed letter 'A', 'B', 'C', 'D'
+            elif selected.upper() in letter_indices:
+                idx = letter_indices[selected.upper()]
+                if 0 <= idx < len(options):
+                    normalized_selected = options[idx]
+                    if normalized_selected.strip() == correct.strip():
+                        is_correct = True
+            # 3. If correct_answer was stored as letter 'A', 'B', 'C', 'D'
+            elif correct.upper() in letter_indices:
+                corr_idx = letter_indices[correct.upper()]
+                if 0 <= corr_idx < len(options) and options[corr_idx].strip() == selected.strip():
+                    is_correct = True
 
         if is_correct:
             correct_count += 1
@@ -64,9 +88,9 @@ def evaluate_answers(state: EvaluateState) -> EvaluateState:
         scored.append({
             "question_id": qid,
             "question_text": q["question"],
-            "options": q["options"],
-            "selected_option": selected,
-            "correct_answer": q["correct_answer"],
+            "options": options,
+            "selected_option": normalized_selected,
+            "correct_answer": correct,
             "is_correct": is_correct,
         })
 
@@ -161,7 +185,7 @@ def generate_explanations(state: EvaluateState) -> EvaluateState:
     language = state.get("language", "English")
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_EVAL_MODEL", os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
+    model = os.getenv("GROQ_EVAL_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"))
 
     prompt = build_explanation_prompt(scored, language)
 

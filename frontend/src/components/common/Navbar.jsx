@@ -64,6 +64,9 @@ export function Navbar({ onNavigate, currentPage }) {
             <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
               AI MOCK TESTS
             </span>
+            <span className="hidden lg:inline-block text-[11px] text-gray-400 font-medium pl-1.5 border-l border-surface-200">
+              by <a href="https://your-bench-flax.vercel.app/" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:opacity-80 transition"><strong className="text-emerald-600 font-extrabold">Your</strong> <strong className="text-gray-900 font-extrabold">Bench</strong></a>
+            </span>
           </div>
         </button>
 
@@ -302,6 +305,22 @@ export function Navbar({ onNavigate, currentPage }) {
               Sign In / Sign Up
             </button>
           )}
+
+          {/* Mobile Footer Your Bench Attribution & Links */}
+          <div className="pt-3 mt-3 border-t border-surface-200 text-center">
+            <p className="text-[11px] text-gray-500 mb-2">
+              A <strong className="font-extrabold"><span className="text-emerald-600">Your</span> <span className="text-gray-900">Bench</span></strong> Product
+            </p>
+            <div className="flex items-center justify-center gap-3 text-xs text-gray-600">
+              <a href="https://your-bench-flax.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">Website</a>
+              <span>•</span>
+              <a href="https://www.instagram.com/your.bench" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">Instagram</a>
+              <span>•</span>
+              <a href="https://www.linkedin.com/company/yourbench/" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">LinkedIn</a>
+              <span>•</span>
+              <a href="mailto:yoursbench@gmail.com" className="hover:text-primary-600 transition">Email</a>
+            </div>
+          </div>
         </div>
       )}
     </nav>

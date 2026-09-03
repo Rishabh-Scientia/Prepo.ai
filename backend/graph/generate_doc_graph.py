@@ -142,7 +142,7 @@ def generate_doc_quiz(state: GenerateDocState) -> GenerateDocState:
         return state
 
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
     clean_text = truncate_document_text(state["document_text"])
 

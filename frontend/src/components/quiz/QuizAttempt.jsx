@@ -30,29 +30,14 @@ export function QuizAttempt({
     }
   }, [quizData.session_id]);
 
-  // Live Timer
+  // Live Timer — uninterrupted counter
   useEffect(() => {
     const interval = setInterval(() => {
-      setSecondsElapsed((prev) => {
-        const next = prev + 1;
-        // Save periodic progress
-        try {
-          localStorage.setItem(
-            `prepo_attempt_${quizData.session_id}`,
-            JSON.stringify({
-              selectedAnswers,
-              secondsElapsed: next,
-            })
-          );
-        } catch {
-          // ignore
-        }
-        return next;
-      });
+      setSecondsElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizData.session_id, selectedAnswers]);
+  }, [quizData.session_id]);
 
   const handleSelectOption = (questionId, optionIndex) => {
     setSelectedAnswers((prev) => {
@@ -88,10 +73,12 @@ export function QuizAttempt({
   const handleFinalSubmit = () => {
     setShowSubmitModal(false);
     
-    // Transform answers for backend schema
+    // Transform answers for backend schema — send actual option text so matching is 100% accurate
     const formattedAnswers = quizData.questions.map((q) => {
       const optIdx = selectedAnswers[q.id];
-      const selected_option = optIdx !== undefined ? OPTION_LETTERS[optIdx] : '';
+      const selected_option = (optIdx !== undefined && q.options && q.options[optIdx] !== undefined)
+        ? q.options[optIdx]
+        : (optIdx !== undefined ? OPTION_LETTERS[optIdx] : '');
       return {
         question_id: q.id,
         selected_option,

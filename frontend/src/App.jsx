@@ -323,7 +323,7 @@ export function App() {
       </main>
 
       {/* ── FOOTER ── */}
-      {currentPage === 'home' && <Footer />}
+      {currentPage === 'home' && <Footer onNavigate={handleNavigate} />}
 
       {/* ── MODALS ── */}
       <SignInModal />
