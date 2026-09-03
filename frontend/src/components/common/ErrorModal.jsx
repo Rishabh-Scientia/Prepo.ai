@@ -41,7 +41,9 @@ export function ErrorModal({ isOpen, message, onRetry, onClose }) {
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
               <h3 className="text-lg font-bold text-gray-900 tracking-tight">Something went wrong</h3>
-              <p className="mt-1.5 text-sm text-gray-600 leading-relaxed break-words">{message}</p>
+              <p className="mt-1.5 text-sm text-gray-600 leading-relaxed break-words">
+                {typeof message === 'object' ? JSON.stringify(message) : String(message)}
+              </p>
             </div>
             <button
               type="button"

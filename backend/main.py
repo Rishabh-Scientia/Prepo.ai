@@ -346,19 +346,22 @@ async def evaluate_quiz(request: EvaluateQuizRequest, user: dict = Depends(get_c
     question_results = []
     for r in result["results"]:
         explanation = r.get("explanation", {})
+        if not isinstance(explanation, dict):
+            explanation = {"reasoning": str(explanation) if explanation else ""}
+
         question_results.append(
             QuestionResult(
-                question_id=r["question_id"],
-                question_text=r["question_text"],
-                options=r["options"],
-                selected_option=r["selected_option"],
-                is_correct=r["is_correct"],
-                correct_answer=r["correct_answer"],
+                question_id=str(r.get("question_id", "")),
+                question_text=str(r.get("question_text", "")),
+                options=r.get("options", []),
+                selected_option=str(r.get("selected_option", "") or ""),
+                is_correct=bool(r.get("is_correct", False)),
+                correct_answer=str(r.get("correct_answer", "")),
                 explanation=ExplanationBlock(
-                    confirmation=explanation.get("confirmation", ""),
-                    core_concept=explanation.get("core_concept", ""),
-                    reasoning=explanation.get("reasoning", ""),
-                    why_incorrect_option_wrong=explanation.get("why_incorrect_option_wrong", ""),
+                    confirmation=str(explanation.get("confirmation", "") or ""),
+                    core_concept=str(explanation.get("core_concept", "") or ""),
+                    reasoning=str(explanation.get("reasoning", "") or ""),
+                    why_incorrect_option_wrong=str(explanation.get("why_incorrect_option_wrong", "") or ""),
                 ),
             )
         )

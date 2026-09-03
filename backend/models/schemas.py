@@ -88,14 +88,14 @@ class AnswerItem(BaseModel):
     """A single answer submitted by the student."""
 
     question_id: str = Field(..., min_length=1)
-    selected_option: str = Field(..., min_length=1)
+    selected_option: str = Field("", description="Student selected option or empty if unanswered")
 
 
 class EvaluateQuizRequest(BaseModel):
     """Validated input for quiz evaluation."""
 
     session_id: str = Field(..., min_length=1, description="Session identifier")
-    answers: List[AnswerItem] = Field(..., min_length=1, description="Student answers")
+    answers: List[AnswerItem] = Field(default_factory=list, description="Student answers")
 
 
 # ── Internal / LLM-Output Models ────────────────────────────────────────────
@@ -149,10 +149,10 @@ class GenerateQuizResponse(BaseModel):
 class ExplanationBlock(BaseModel):
     """4-part explanation for a single question."""
 
-    confirmation: str
-    core_concept: str
-    reasoning: str
-    why_incorrect_option_wrong: str
+    confirmation: str = ""
+    core_concept: str = ""
+    reasoning: str = ""
+    why_incorrect_option_wrong: str = ""
 
 
 class QuestionResult(BaseModel):
@@ -161,7 +161,7 @@ class QuestionResult(BaseModel):
     question_id: str
     question_text: str
     options: List[str]
-    selected_option: str
+    selected_option: str = ""
     is_correct: bool
     correct_answer: str
     explanation: ExplanationBlock

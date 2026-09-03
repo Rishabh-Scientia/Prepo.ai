@@ -74,14 +74,19 @@ export function QuizAttempt({
     setShowSubmitModal(false);
     
     // Transform answers for backend schema — send actual option text so matching is 100% accurate
-    const formattedAnswers = quizData.questions.map((q) => {
-      const optIdx = selectedAnswers[q.id];
+    const formattedAnswers = quizData.questions.map((q, idx) => {
+      const qId = q.id || q.question_id || `q${idx + 1}`;
+      const optIdx = selectedAnswers[qId] !== undefined 
+        ? selectedAnswers[qId] 
+        : (selectedAnswers[q.id] !== undefined ? selectedAnswers[q.id] : undefined);
+
       const selected_option = (optIdx !== undefined && q.options && q.options[optIdx] !== undefined)
-        ? q.options[optIdx]
-        : (optIdx !== undefined ? OPTION_LETTERS[optIdx] : '');
+        ? String(q.options[optIdx])
+        : (optIdx !== undefined && OPTION_LETTERS[optIdx] ? OPTION_LETTERS[optIdx] : '');
+
       return {
-        question_id: q.id,
-        selected_option,
+        question_id: String(qId),
+        selected_option: selected_option || '',
       };
     });
 

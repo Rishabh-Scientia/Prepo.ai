@@ -17,6 +17,20 @@ async function getAuthHeaders() {
   };
 }
 
+function formatApiError(err, fallback = 'An unexpected error occurred.') {
+  if (!err) return fallback;
+  if (typeof err === 'string') return err;
+  if (typeof err.detail === 'string') return err.detail;
+  if (Array.isArray(err.detail)) {
+    return err.detail.map((e) => e.msg || e.message || JSON.stringify(e)).join(', ');
+  }
+  if (typeof err.detail === 'object' && err.detail !== null) {
+    return err.detail.message || err.detail.msg || JSON.stringify(err.detail);
+  }
+  if (err.message) return err.message;
+  return fallback;
+}
+
 export const api = {
   /** Health check */
   async health() {
@@ -37,44 +51,43 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (res.status === 403) {
       const err = await res.json().catch(() => ({}));
-      const error = new Error(err.detail || 'Credit limit reached. Please purchase credits to generate quizzes.');
+      const error = new Error(formatApiError(err, 'Credit limit reached. Please purchase credits to generate quizzes.'));
       error.isCreditLimit = true;
       throw error;
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Quiz generation failed (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Quiz generation failed (HTTP ${res.status})`));
     }
     return res.json();
   },
 
-  /** Generate Quiz from uploaded document (PDF, DOCX, TXT) */
+  /** Generate Quiz from uploaded Document (PDF / DOCX / TXT) */
   async generateQuizFromDoc(formData) {
     const { data: { session } } = await supabase.auth.getSession();
     const accessToken = session?.access_token;
     if (!accessToken) {
-      throw new Error('You must be signed in to perform this action. Please sign in and try again.');
+      throw new Error('You must be signed in to upload study notes. Please sign in and try again.');
     }
-    const headers = {
-      'Authorization': `Bearer ${accessToken}`,
-    };
 
     const res = await fetch(`${API_BASE}/api/generate-quiz-from-doc`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
       body: formData,
     });
 
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (res.status === 403) {
       const err = await res.json().catch(() => ({}));
-      const error = new Error(err.detail || 'Credit limit reached. Please purchase credits to generate quizzes.');
+      const error = new Error(formatApiError(err, 'Credit limit reached. Please purchase credits to generate quizzes.'));
       error.isCreditLimit = true;
       throw error;
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Document quiz generation failed (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Document quiz generation failed (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -94,7 +107,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Quiz evaluation failed (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Quiz evaluation failed (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -110,7 +123,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch attempt history (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch attempt history (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -126,7 +139,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch attempt (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch attempt (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -142,7 +155,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to delete attempt (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to delete attempt (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -159,7 +172,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to share quiz (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to share quiz (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -169,7 +182,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/quiz/shared/${quizId}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Shared quiz not found (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Shared quiz not found (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -187,7 +200,7 @@ export const api = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to submit test (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to submit test (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -203,7 +216,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch shared quizzes (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch shared quizzes (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -219,7 +232,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch student responses (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch student responses (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -235,7 +248,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to delete shared quiz (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to delete shared quiz (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -251,7 +264,7 @@ export const api = {
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch user credits (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch user credits (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -261,7 +274,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/payments/plans`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch payment plans (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to fetch payment plans (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -278,7 +291,7 @@ export const api = {
     if (res.status === 401) throw new Error('Please sign in to buy credits.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to create payment order (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Failed to create payment order (HTTP ${res.status})`));
     }
     return res.json();
   },
@@ -295,7 +308,7 @@ export const api = {
     if (res.status === 401) throw new Error('Session expired during payment verification. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Payment verification failed (HTTP ${res.status})`);
+      throw new Error(formatApiError(err, `Payment verification failed (HTTP ${res.status})`));
     }
     return res.json();
   },
