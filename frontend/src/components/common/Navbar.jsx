@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
+  Home,
   Coins, 
   User, 
   History, 
@@ -29,6 +30,9 @@ export function Navbar({ onNavigate, currentPage }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Extract first name or fallback to 'My Account'
+  const firstName = displayName ? displayName.trim().split(' ')[0] : 'My Account';
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -64,24 +68,35 @@ export function Navbar({ onNavigate, currentPage }) {
             <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
               AI MOCK TESTS
             </span>
-            <span className="hidden lg:inline-block text-[11px] text-gray-400 font-medium pl-1.5 border-l border-surface-200">
-              by <a href="https://your-bench-flax.vercel.app/" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:opacity-80 transition"><strong className="text-emerald-600 font-extrabold">Your</strong> <strong className="text-gray-900 font-extrabold">Bench</strong></a>
-            </span>
           </div>
         </button>
 
         {/* Desktop Nav Actions */}
-        <div className="hidden md:flex items-center gap-2.5">
+        <div className="hidden md:flex items-center gap-3">
+          {/* Home Tab */}
           <button
-            onClick={() => handleNavClick('config')}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
-              currentPage === 'config' 
-                ? 'bg-primary-600 text-white shadow-sm' 
-                : 'text-gray-600 hover:text-primary-700 hover:bg-primary-50'
+            onClick={() => handleNavClick('home')}
+            className={`px-3.5 py-2 text-sm font-semibold rounded-xl transition-all flex items-center gap-1.5 ${
+              currentPage === 'home'
+                ? 'text-primary-700 bg-primary-50/90 font-bold'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
             }`}
           >
-            <Sparkles className={`w-4 h-4 ${currentPage === 'config' ? 'text-primary-200' : 'text-primary-500'}`} />
-            Create Test
+            <Home className="w-4 h-4" />
+            <span>Home</span>
+          </button>
+
+          {/* Create Test Primary Button */}
+          <button
+            onClick={() => handleNavClick('config')}
+            className={`px-4 py-2 text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md flex items-center gap-2 active:scale-95 ${
+              currentPage === 'config'
+                ? 'bg-primary-700 text-white ring-2 ring-primary-400 ring-offset-1 shadow-md'
+                : 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-primary-200" />
+            <span>Create Test</span>
           </button>
 
           {isLoggedIn ? (
@@ -110,8 +125,8 @@ export function Navbar({ onNavigate, currentPage }) {
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-sm">
                     {userInitial}
                   </div>
-                  <span className="text-sm font-semibold text-gray-800 max-w-[100px] truncate hidden lg:inline">
-                    {displayName}
+                  <span className="text-sm font-bold text-gray-800 hidden sm:inline">
+                    {firstName}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -241,12 +256,12 @@ export function Navbar({ onNavigate, currentPage }) {
 
           <button
             onClick={() => handleNavClick('config')}
-            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg flex items-center gap-2.5 transition-colors ${
-              currentPage === 'config' ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-700 hover:bg-surface-50'
+            className={`w-full text-left px-3.5 py-2.5 text-sm font-bold rounded-xl flex items-center gap-2.5 transition-all shadow-sm ${
+              currentPage === 'config' ? 'bg-primary-700 text-white' : 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-primary-600" />
-            Create AI Quiz
+            <Sparkles className="w-4 h-4 text-primary-200" />
+            <span>Create Test</span>
           </button>
 
           {isLoggedIn ? (
