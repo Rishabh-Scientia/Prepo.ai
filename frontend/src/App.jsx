@@ -235,31 +235,53 @@ export function App() {
           <div className="max-w-4xl mx-auto px-4 py-8 animate-fadeIn">
             
             {/* Mode Toggle (Topic vs Document) */}
-            <div className="max-w-2xl mx-auto mb-6 flex items-center justify-center p-1 bg-surface-200/80 rounded-card border border-surface-300">
+            <div className="max-w-xl mx-auto mb-6 p-1.5 bg-surface-200/80 backdrop-blur-sm rounded-2xl border border-surface-300 grid grid-cols-2 gap-1.5 shadow-xs">
               <button
                 type="button"
                 onClick={() => setConfigMode('topic')}
-                className={`flex-1 py-2 text-xs font-bold rounded-card transition flex items-center justify-center gap-2 ${
+                className={`py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 text-center select-none ${
                   configMode === 'topic'
-                    ? 'bg-white text-primary-700 shadow-subtle'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-primary-800 font-bold shadow-sm ring-1 ring-black/5'
+                    : 'text-gray-600 hover:text-gray-900 font-medium hover:bg-white/40'
                 }`}
               >
-                <Sparkles className="w-4 h-4 text-primary-600" />
-                <span>Generate from Syllabus Topic</span>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  configMode === 'topic' ? 'bg-primary-100 text-primary-700' : 'bg-surface-300/60 text-gray-500'
+                }`}>
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="text-xs sm:text-sm font-bold tracking-tight truncate">
+                    Syllabus Topics
+                  </div>
+                  <div className="text-[10px] text-gray-500 hidden sm:block truncate">
+                    Subject & grade based
+                  </div>
+                </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setConfigMode('doc')}
-                className={`flex-1 py-2 text-xs font-bold rounded-card transition flex items-center justify-center gap-2 ${
+                className={`py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 text-center select-none ${
                   configMode === 'doc'
-                    ? 'bg-white text-primary-700 shadow-subtle'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-primary-800 font-bold shadow-sm ring-1 ring-black/5'
+                    : 'text-gray-600 hover:text-gray-900 font-medium hover:bg-white/40'
                 }`}
               >
-                <FileText className="w-4 h-4 text-primary-600" />
-                <span>Generate from Document (PDF/Doc)</span>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  configMode === 'doc' ? 'bg-primary-100 text-primary-700' : 'bg-surface-300/60 text-gray-500'
+                }`}>
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="text-xs sm:text-sm font-bold tracking-tight truncate">
+                    Upload Document
+                  </div>
+                  <div className="text-[10px] text-gray-500 hidden sm:block truncate">
+                    PDF, DOCX or Notes
+                  </div>
+                </div>
               </button>
             </div>
 

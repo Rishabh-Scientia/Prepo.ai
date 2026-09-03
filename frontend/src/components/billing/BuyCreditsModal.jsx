@@ -102,26 +102,26 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[100] overflow-y-auto p-3 sm:p-4 bg-black/70 backdrop-blur-sm flex min-h-full items-center justify-center animate-fadeIn"
       onClick={() => {
         if (!purchasingPlanId) closeBuyCreditsModal();
       }}
     >
       <div 
-        className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-xl overflow-hidden animate-scaleUp text-left"
+        className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col my-auto overflow-hidden animate-scaleUp text-left"
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-primary-600 via-primary-700 to-blue-700 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
-              <Coins className="w-6 h-6 text-amber-300" />
+        {/* Header - Sticky and always accessible */}
+        <div className="shrink-0 px-5 sm:px-6 py-4 bg-gradient-to-r from-primary-600 via-primary-700 to-blue-700 text-white flex items-center justify-between shadow-sm z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shrink-0">
+              <Coins className="w-5 h-5 text-amber-300" />
             </div>
-            <div>
-              <h2 className="text-lg font-extrabold tracking-tight">Top Up Quiz Credits</h2>
-              <p className="text-xs text-primary-100">
-                You currently have <span className="font-bold text-amber-300">{credits} credits</span> remaining
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-extrabold tracking-tight truncate">Top Up Quiz Credits</h2>
+              <p className="text-xs text-primary-100 truncate">
+                Current Balance: <span className="font-bold text-amber-300">{credits} credits</span>
               </p>
             </div>
           </div>
@@ -129,15 +129,15 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
             type="button"
             onClick={closeBuyCreditsModal}
             disabled={purchasingPlanId !== null}
-            className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
-            aria-label="Close"
+            className="text-white/90 hover:text-white p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all shrink-0 ml-2 disabled:opacity-50"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="p-6">
+        {/* Pricing Cards - Scrollable Container */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
           {loading ? (
             <div className="py-14 flex flex-col items-center justify-center gap-3 text-gray-500">
               <Loader2 className="w-7 h-7 animate-spin text-primary-600" />
@@ -235,10 +235,22 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
           )}
 
           {/* Secure Payment Guarantee */}
-          <div className="mt-6 pt-4 border-t border-surface-200 flex items-center justify-center gap-2 text-xs text-gray-500">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <div className="mt-6 pt-4 border-t border-surface-200 flex items-center justify-center gap-2 text-xs text-gray-500 text-center">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>100% Secure Checkout powered by Razorpay (UPI, Cards, NetBanking)</span>
           </div>
+        </div>
+
+        {/* Footer with Close Button */}
+        <div className="shrink-0 bg-surface-50 px-5 py-3 border-t border-surface-200 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={closeBuyCreditsModal}
+            disabled={purchasingPlanId !== null}
+            className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white border border-surface-300 rounded-xl hover:bg-surface-100 transition shadow-xs"
+          >
+            Cancel / Close
+          </button>
         </div>
       </div>
     </div>,
