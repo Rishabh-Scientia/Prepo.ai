@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { processPayment } from '../../services/payment';
-import { X, Coins, Check, Sparkles, Loader2, ShieldCheck } from 'lucide-react';
+import { X, Coins, Check, Sparkles, Loader2, ShieldCheck, Zap } from 'lucide-react';
 
 export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
   const { 
@@ -28,22 +28,20 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
     try {
       setLoading(true);
       const data = await api.getPaymentPlans();
-      if (data && data.plans) {
+      if (data && data.plans && data.plans.length > 0) {
         setPlans(data.plans);
       } else {
-        // Fallback default plans
+        // Fallback default plans matching backend schema
         setPlans([
-          { id: 'plan_30', name: 'Starter Pack', credits: 30, price: 29, original_price: 49, popular: false },
-          { id: 'plan_100', name: 'Pro Student', credits: 100, price: 79, original_price: 149, popular: true },
-          { id: 'plan_250', name: 'Master Prep', credits: 250, price: 149, original_price: 299, popular: false },
+          { plan_id: 'plan_30', name: 'Starter Pack', amount: 900, currency: 'INR', credits: 30, price_display: '₹9', per_quiz: '₹0.30', description: '30 AI Quiz Generations', badge: 'Starter', popular: false },
+          { plan_id: 'plan_100', name: 'Pro Pack', amount: 2900, currency: 'INR', credits: 100, price_display: '₹29', per_quiz: '₹0.29', description: '100 AI Quiz Generations', badge: 'Best Value', popular: true },
         ]);
       }
     } catch (err) {
       console.warn('Could not load payment plans:', err.message);
       setPlans([
-        { id: 'plan_30', name: 'Starter Pack', credits: 30, price: 29, original_price: 49, popular: false },
-        { id: 'plan_100', name: 'Pro Student', credits: 100, price: 79, original_price: 149, popular: true },
-        { id: 'plan_250', name: 'Master Prep', credits: 250, price: 149, original_price: 299, popular: false },
+        { plan_id: 'plan_30', name: 'Starter Pack', amount: 900, currency: 'INR', credits: 30, price_display: '₹9', per_quiz: '₹0.30', description: '30 AI Quiz Generations', badge: 'Starter', popular: false },
+        { plan_id: 'plan_100', name: 'Pro Pack', amount: 2900, currency: 'INR', credits: 100, price_display: '₹29', per_quiz: '₹0.29', description: '100 AI Quiz Generations', badge: 'Best Value', popular: true },
       ]);
     } finally {
       setLoading(false);
@@ -51,9 +49,10 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
   };
 
   const handleBuy = async (plan) => {
-    setPurchasingPlanId(plan.id);
+    const planId = plan.plan_id || plan.id;
+    setPurchasingPlanId(planId);
     await processPayment({
-      planId: plan.id,
+      planId,
       userEmail: user?.email,
       userName: displayName,
       onSuccess: async (res) => {
@@ -61,7 +60,7 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
         closeBuyCreditsModal();
         await fetchCredits();
         if (onShowToast) {
-          onShowToast(`🎉 Successfully added ${plan.credits} credits to your account!`, 'success');
+          onShowToast(`🎉 Payment Successful! ${plan.credits} credits added to your account!`, 'success');
         }
         if (onPaymentSuccess) onPaymentSuccess(res);
       },
@@ -81,12 +80,12 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-card border border-surface-200 shadow-elevated w-full max-w-2xl overflow-hidden animate-scaleUp">
+      <div className="bg-white rounded-lg border border-surface-200 shadow-elevated w-full max-w-xl overflow-hidden animate-scaleUp">
         
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-primary-600 to-primary-700 text-white flex items-center justify-between">
+        <div className="px-6 py-5 bg-gradient-to-r from-primary-600 to-primary-700 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-card bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
               <Coins className="w-5 h-5 text-amber-300" />
             </div>
             <div>
@@ -112,73 +111,93 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
               <span className="text-sm">Loading available credit packs...</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`relative rounded-card border transition p-5 flex flex-col justify-between ${
-                    plan.popular
-                      ? 'border-primary-500 bg-primary-50/40 shadow-subtle ring-2 ring-primary-500/20'
-                      : 'border-surface-300 bg-white hover:border-primary-300'
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      Most Popular
-                    </div>
-                  )}
+            <div className={`grid gap-4 ${plans.length >= 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+              {plans.map((plan) => {
+                const planId = plan.plan_id || plan.id;
+                const priceInRupees = plan.price_display || `₹${Math.round((plan.amount || 0) / 100)}`;
+                const perQuiz = plan.per_quiz || '';
 
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900">{plan.name}</h3>
-                    <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className="text-2xl font-bold text-gray-900">₹{plan.price}</span>
-                      {plan.original_price && (
-                        <span className="text-xs text-gray-400 line-through">₹{plan.original_price}</span>
-                      )}
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-xs text-gray-600">
-                      <div className="flex items-center gap-2 font-semibold text-primary-900">
-                        <Coins className="w-4 h-4 text-amber-500 shrink-0" />
-                        <span>{plan.credits} AI Quiz Credits</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Topic & PDF Generation</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Step-by-step AI solutions</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>No expiration date</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBuy(plan)}
-                    disabled={purchasingPlanId !== null}
-                    className={`mt-6 w-full py-2 px-3 text-xs font-bold rounded-card transition flex items-center justify-center gap-1.5 shadow-sm ${
+                return (
+                  <div
+                    key={planId}
+                    className={`relative rounded-lg border-2 transition p-5 flex flex-col justify-between ${
                       plan.popular
-                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                        : 'bg-surface-100 hover:bg-surface-200 text-gray-800 border border-surface-300'
+                        ? 'border-primary-500 bg-primary-50/30 shadow-md ring-1 ring-primary-500/30'
+                        : 'border-surface-200 bg-white hover:border-primary-300 hover:shadow-subtle'
                     }`}
                   >
-                    {purchasingPlanId === plan.id ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Opening gateway...</span>
-                      </>
-                    ) : (
-                      <span>Get {plan.credits} Credits</span>
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap">
+                        <Sparkles className="w-3 h-3" />
+                        {plan.badge || 'Most Popular'}
+                      </div>
                     )}
-                  </button>
-                </div>
-              ))}
+
+                    {!plan.popular && plan.badge && (
+                      <div className="mb-2">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-surface-100 px-2 py-0.5 rounded border border-surface-200">
+                          {plan.badge}
+                        </span>
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900 mt-1">{plan.name}</h3>
+                      
+                      {/* Price Display */}
+                      <div className="mt-3 flex items-baseline gap-2">
+                        <span className="text-3xl font-extrabold text-gray-900">{priceInRupees}</span>
+                        {perQuiz && (
+                          <span className="text-xs text-gray-500 font-medium">({perQuiz}/quiz)</span>
+                        )}
+                      </div>
+
+                      {/* Features */}
+                      <div className="mt-4 space-y-2.5 text-xs text-gray-600">
+                        <div className="flex items-center gap-2 font-bold text-primary-800">
+                          <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                          <span>{plan.credits} AI Quiz Credits</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Topic & PDF Generation</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Step-by-step AI solutions</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>No expiration date</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBuy(plan)}
+                      disabled={purchasingPlanId !== null}
+                      className={`mt-6 w-full py-2.5 px-3 text-sm font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-sm ${
+                        plan.popular
+                          ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                          : 'bg-gray-900 hover:bg-gray-800 text-white'
+                      }`}
+                    >
+                      {purchasingPlanId === planId ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Opening Razorpay...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4" />
+                          <span>Get {plan.credits} Credits</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 

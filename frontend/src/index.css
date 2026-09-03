@@ -64,15 +64,31 @@
 
 /* ── KaTeX Math Formula Overrides ────────────────────────────────────────── */
 .math-rendered-content .katex {
-  font-size: 1.05em;
+  font-size: 1em;
   text-rendering: auto;
+  white-space: normal;
 }
 
 .math-rendered-content .katex-display {
-  margin: 0.75em 0;
+  margin: 0.5em 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.25em 0;
+}
+
+.math-rendered-content .katex-display > .katex {
+  white-space: normal;
+}
+
+/* Ensure inline KaTeX doesn't break text flow */
+.math-rendered-content .katex-html {
+  white-space: nowrap;
+}
+
+/* Better spacing for math inside question cards */
+.math-rendered-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Custom scrollbars */
