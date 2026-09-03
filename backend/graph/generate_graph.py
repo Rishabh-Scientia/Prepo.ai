@@ -317,6 +317,28 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
             if "difficulty" not in q:
                 q["difficulty"] = state["difficulty"].lower()
 
+            # Auto-wrap bare LaTeX in options and correct_answer if LLM omitted $ ... $
+            raw_options = q.get("options", [])
+            cleaned_options = []
+            for opt in raw_options:
+                opt_str = str(opt).strip()
+                if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str):
+                    opt_str = f"${opt_str}$"
+                cleaned_options.append(opt_str)
+
+            corr = str(q.get("correct_answer", "")).strip()
+            if "$" not in corr and ("\\" in corr or "^" in corr):
+                corr = f"${corr}$"
+
+            if corr not in cleaned_options and raw_options:
+                for orig_opt, clean_opt in zip(raw_options, cleaned_options):
+                    if str(orig_opt).strip() == str(q.get("correct_answer", "")).strip():
+                        corr = clean_opt
+                        break
+
+            q["options"] = cleaned_options
+            q["correct_answer"] = corr
+
             validated = QuestionInternal(**q)
             questions.append(validated.model_dump())
 

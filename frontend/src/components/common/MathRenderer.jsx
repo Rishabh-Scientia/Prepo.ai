@@ -5,18 +5,44 @@ import 'katex/dist/contrib/auto-render';
 /**
  * Robust KaTeX Math Renderer
  * Supports all delimiter formats: $$...$$, $...$, \[...\], \(...\)
- * Uses KaTeX auto-render for maximum compatibility with backend LaTeX output.
+ * Also seamlessly renders bare LaTeX expressions that lack enclosing delimiters (e.g. 2.26\times10^8\,\text{m/s}).
  */
 export function MathRenderer({ text = '', className = '' }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current || !text) return;
+    if (!containerRef.current || text === undefined || text === null) return;
 
-    // Set raw text content first (safely escapes HTML)
-    containerRef.current.textContent = text;
+    const rawStr = String(text).trim();
+    if (!rawStr) {
+      containerRef.current.textContent = '';
+      return;
+    }
 
-    // Use KaTeX auto-render with all standard delimiters
+    const hasDelimiters = rawStr.includes('$') || rawStr.includes('\\(') || rawStr.includes('\\[');
+    const hasLatexPatterns = /\\[a-zA-Z]+|\^\{?[0-9a-zA-Z\+\-]+\}?|\_\{?[0-9a-zA-Z\+\-]+\}?|\\,/.test(rawStr);
+
+    // 1. If it's a bare LaTeX expression without delimiters (e.g. options: 2.26\times10^8\,\text{m/s})
+    if (!hasDelimiters && hasLatexPatterns) {
+      try {
+        containerRef.current.innerHTML = katex.renderToString(rawStr, {
+          displayMode: false,
+          throwOnError: false,
+        });
+        return;
+      } catch {
+        // Fall back to auto-render with wrapped delimiters
+      }
+    }
+
+    // 2. Prepare text for standard KaTeX rendering
+    let processedText = rawStr;
+    if (!hasDelimiters && hasLatexPatterns) {
+      processedText = `$${rawStr}$`;
+    }
+
+    containerRef.current.textContent = processedText;
+
     try {
       if (typeof window !== 'undefined' && window.renderMathInElement) {
         window.renderMathInElement(containerRef.current, {
@@ -30,8 +56,7 @@ export function MathRenderer({ text = '', className = '' }) {
           ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
         });
       } else {
-        // Fallback: manual regex-based rendering for SSR or if auto-render not loaded
-        renderManually(containerRef.current, text);
+        renderManually(containerRef.current, processedText);
       }
     } catch (err) {
       console.warn('KaTeX rendering notice:', err);
@@ -48,13 +73,12 @@ export function MathRenderer({ text = '', className = '' }) {
 
 /**
  * Manual fallback renderer when auto-render CDN isn't available.
- * Handles $$...$$, \[...\], $...$, \(...\) delimiters.
+ * Handles $$...$$, \[...\], $...$, \(...\) delimiters, and bare formulas.
  */
 function renderManually(element, text) {
   if (!text || typeof text !== 'string') return;
 
   // Combined regex for all KaTeX delimiters
-  // Order matters: block-level first ($$, \[...\]), then inline ($, \(...\))
   const mathRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([\s\S]+?\\\))/g;
   const parts = text.split(mathRegex);
 

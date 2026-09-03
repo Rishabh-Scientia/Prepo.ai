@@ -11,13 +11,13 @@ const CLASS_LEVELS = [
   { value: 'Class 7', label: 'Class 7' },
   { value: 'Class 8', label: 'Class 8' },
   { value: 'Class 9', label: 'Class 9' },
-  { value: 'Class 10', label: 'Class 10 (CBSE/ICSE/State)' },
-  { value: 'Class 11', label: 'Class 11 (CBSE/State)' },
-  { value: 'Class 12', label: 'Class 12 (CBSE/State)' },
-  { value: 'Undergraduate (B.Tech/B.Sc/B.Com)', label: 'Undergraduate (B.Tech / B.Sc / B.Com / College)' },
+  { value: 'Class 10', label: 'Class 10' },
+  { value: 'Class 11', label: 'Class 11' },
+  { value: 'Class 12', label: 'Class 12' },
+  { value: 'College / Degree', label: 'College / Degree (B.Tech / B.Sc / B.Com)' },
   { value: 'Postgraduate', label: 'Postgraduate (M.Tech / M.Sc / MCA)' },
-  { value: 'Competitive Exam (JEE/NEET/GATE)', label: 'Competitive Exam (JEE / NEET / GATE / UPSC)' },
-  { value: 'custom', label: '✏️ Other / Custom Class or Exam' },
+  { value: 'Competitive Exam', label: 'Competitive Exam (JEE / NEET / GATE / UPSC)' },
+  { value: 'custom', label: '✏️ Custom / Other' },
 ];
 
 const SUBJECT_SUGGESTIONS = [

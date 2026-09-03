@@ -18,18 +18,18 @@ export function UserProfile({ initialTab = 'history', onCreateQuiz, onShowToast 
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent)]" />
         </div>
 
-        <div className="px-6 pb-6 -mt-10 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+        <div className="px-6 pb-6 pt-2 relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             {/* Avatar & Info */}
-            <div className="flex items-end gap-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg border-4 border-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="-mt-12 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg border-4 border-white shrink-0">
                 {userInitial}
               </div>
-              <div className="pb-1">
-                <h2 className="text-xl font-extrabold text-gray-900">{displayName}</h2>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" />
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+              <div className="pt-1 sm:pt-0">
+                <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{displayName}</h2>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <p className="text-sm text-gray-500 font-medium">{user?.email}</p>
                 </div>
               </div>
             </div>

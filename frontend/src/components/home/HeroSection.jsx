@@ -28,7 +28,7 @@ export function HeroSection({ onStartQuiz, onSelectSubject }) {
       <div className="text-center max-w-3xl mx-auto px-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700 mb-6">
           <Sparkles className="w-3.5 h-3.5 text-primary-600" />
-          <span>Powered by LangGraph & Llama 3.3 70B</span>
+          <span>AI-Powered Adaptive Assessment Engine</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight sm:leading-tight">

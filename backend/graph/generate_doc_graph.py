@@ -247,6 +247,25 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
         if not correct_answer:
             correct_answer = options[0]
 
+        # Auto-wrap bare LaTeX in options and correct_answer if LLM omitted $ ... $
+        cleaned_options = []
+        for opt in options:
+            opt_str = str(opt).strip()
+            if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str):
+                opt_str = f"${opt_str}$"
+            cleaned_options.append(opt_str)
+
+        if "$" not in correct_answer and ("\\" in correct_answer or "^" in correct_answer):
+            correct_answer = f"${correct_answer}$"
+
+        if correct_answer not in cleaned_options and options:
+            for orig_opt, clean_opt in zip(options, cleaned_options):
+                if str(orig_opt).strip() == str(q.get("correct_answer", "")).strip():
+                    correct_answer = clean_opt
+                    break
+
+        options = cleaned_options
+
         # Ensure correct_answer matches one of the options
         if correct_answer not in options:
             options[0] = correct_answer
