@@ -67,24 +67,29 @@
   white-space: normal;
 }
 
+/* Force inline display for formulas inside options & question cards so they NEVER split vertically */
 .math-rendered-content .katex-display {
-  margin: 0.5em 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.25em 0;
+  display: inline-block !important;
+  margin: 0 0.15em !important;
+  padding: 0 !important;
+  text-align: left !important;
+  vertical-align: middle;
 }
 
 .math-rendered-content .katex-display > .katex {
   white-space: normal;
+  display: inline-block;
 }
 
 /* Ensure inline KaTeX doesn't break text flow */
 .math-rendered-content .katex-html {
-  white-space: nowrap;
+  white-space: normal;
+  display: inline;
 }
 
-/* Better spacing for math inside question cards */
+/* Prevent unwanted line breaks inside math options */
 .math-rendered-content {
+  display: inline;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }

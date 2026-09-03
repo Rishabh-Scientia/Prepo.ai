@@ -247,23 +247,38 @@ def validate_doc_quiz_json(state: GenerateDocState) -> GenerateDocState:
         if not correct_answer:
             correct_answer = options[0]
 
-        # Auto-wrap bare LaTeX in options and correct_answer if LLM omitted $ ... $
+        # Auto-wrap and normalize LaTeX in options and correct_answer
         cleaned_options = []
         for opt in options:
-            opt_str = str(opt).strip()
-            if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str):
+            opt_str = re.sub(r"\s+", " ", str(opt)).strip()
+            opt_str = opt_str.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+            # Auto-prefix bare trig & greek words if backslash is missing
+            opt_str = re.sub(
+                r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
+                r"\\\1",
+                opt_str
+            )
+            if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str or "_" in opt_str):
                 opt_str = f"${opt_str}$"
             cleaned_options.append(opt_str)
 
-        if "$" not in correct_answer and ("\\" in correct_answer or "^" in correct_answer):
-            correct_answer = f"${correct_answer}$"
+        corr = re.sub(r"\s+", " ", str(correct_answer)).strip()
+        corr = corr.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+        corr = re.sub(
+            r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
+            r"\\\1",
+            corr
+        )
+        if "$" not in corr and ("\\" in corr or "^" in corr or "_" in corr):
+            corr = f"${corr}$"
 
-        if correct_answer not in cleaned_options and options:
+        if corr not in cleaned_options and options:
             for orig_opt, clean_opt in zip(options, cleaned_options):
-                if str(orig_opt).strip() == str(q.get("correct_answer", "")).strip():
-                    correct_answer = clean_opt
+                if re.sub(r"\s+", " ", str(orig_opt)).strip() == re.sub(r"\s+", " ", str(correct_answer)).strip():
+                    corr = clean_opt
                     break
 
+        correct_answer = corr
         options = cleaned_options
 
         # Ensure correct_answer matches one of the options

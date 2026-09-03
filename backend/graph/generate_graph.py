@@ -317,22 +317,35 @@ def validate_quiz_json(state: GenerateState) -> GenerateState:
             if "difficulty" not in q:
                 q["difficulty"] = state["difficulty"].lower()
 
-            # Auto-wrap bare LaTeX in options and correct_answer if LLM omitted $ ... $
+            # Auto-wrap and normalize LaTeX in options and correct_answer
             raw_options = q.get("options", [])
             cleaned_options = []
             for opt in raw_options:
-                opt_str = str(opt).strip()
-                if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str):
+                opt_str = re.sub(r"\s+", " ", str(opt)).strip()
+                opt_str = opt_str.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+                # Auto-prefix bare trig & greek words if backslash is missing
+                opt_str = re.sub(
+                    r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
+                    r"\\\1",
+                    opt_str
+                )
+                if "$" not in opt_str and ("\\" in opt_str or "^" in opt_str or "_" in opt_str):
                     opt_str = f"${opt_str}$"
                 cleaned_options.append(opt_str)
 
-            corr = str(q.get("correct_answer", "")).strip()
-            if "$" not in corr and ("\\" in corr or "^" in corr):
+            corr = re.sub(r"\s+", " ", str(q.get("correct_answer", ""))).strip()
+            corr = corr.replace("$$", "$").replace("\\[", "$").replace("\\]", "$")
+            corr = re.sub(
+                r"(?<!\\)\b(theta|alpha|beta|gamma|delta|pi|sigma|omega|phi|lambda|sin|cos|tan|sec|csc|cot)\b",
+                r"\\\1",
+                corr
+            )
+            if "$" not in corr and ("\\" in corr or "^" in corr or "_" in corr):
                 corr = f"${corr}$"
 
             if corr not in cleaned_options and raw_options:
                 for orig_opt, clean_opt in zip(raw_options, cleaned_options):
-                    if str(orig_opt).strip() == str(q.get("correct_answer", "")).strip():
+                    if re.sub(r"\s+", " ", str(orig_opt)).strip() == re.sub(r"\s+", " ", str(q.get("correct_answer", ""))).strip():
                         corr = clean_opt
                         break
 
