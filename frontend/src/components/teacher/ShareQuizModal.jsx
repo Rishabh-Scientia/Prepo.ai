@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { 
@@ -36,10 +36,17 @@ export function ShareQuizModal({
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const initializedIdRef = useRef(null);
 
-  // Initialize settings from prop or fetch if missing
+  // Initialize settings once per modal opening
   useEffect(() => {
-    if (!isOpen || !sharedQuizId) return;
+    if (!isOpen || !sharedQuizId) {
+      initializedIdRef.current = null;
+      return;
+    }
+
+    if (initializedIdRef.current === sharedQuizId) return;
+    initializedIdRef.current = sharedQuizId;
 
     if (initialSettings) {
       setIsActive(initialSettings.is_active !== false);
@@ -78,7 +85,7 @@ export function ShareQuizModal({
         })
         .catch(() => {});
     }
-  }, [isOpen, sharedQuizId, initialSettings]);
+  }, [isOpen, sharedQuizId]);
 
   useEffect(() => {
     if (!isOpen) return;

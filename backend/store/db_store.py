@@ -350,7 +350,12 @@ def update_shared_quiz_settings(
         return False
 
     shared_quiz = get_shared_quiz(quiz_id)
-    if not shared_quiz or str(shared_quiz.get("created_by")) != str(teacher_id):
+    if not shared_quiz:
+        return False
+
+    quiz_owner = str(shared_quiz.get("created_by", "")).strip().lower()
+    req_teacher = str(teacher_id or "").strip().lower()
+    if quiz_owner and req_teacher and quiz_owner != req_teacher:
         return False
 
     allowed_keys = {"is_active", "time_limit_minutes", "show_results"}
@@ -360,7 +365,6 @@ def update_shared_quiz_settings(
 
     params = urllib.parse.urlencode({
         "id": f"eq.{quiz_id}",
-        "created_by": f"eq.{teacher_id}",
     })
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{params}"
 
@@ -375,23 +379,6 @@ def update_shared_quiz_settings(
         )
         with urllib.request.urlopen(req) as response:
             if response.status in (200, 204):
-                # Also ensure questions[0] is updated in case both are queried
-                try:
-                    questions = shared_quiz.get("questions", [])
-                    if isinstance(questions, list) and len(questions) > 0 and isinstance(questions[0], dict):
-                        current_settings = questions[0].get("_quiz_settings", {})
-                        current_settings.update(clean_updates)
-                        questions[0]["_quiz_settings"] = current_settings
-                        q_req = urllib.request.Request(
-                            endpoint,
-                            data=json.dumps({"questions": questions}).encode("utf-8"),
-                            headers=_get_headers(),
-                            method="PATCH",
-                        )
-                        with urllib.request.urlopen(q_req):
-                            pass
-                except Exception:
-                    pass
                 return True
     except urllib.error.HTTPError:
         pass

@@ -86,6 +86,9 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
     setQuizzes((prev) =>
       prev.map((q) => (q.id === quizId ? { ...q, ...newSettings } : q))
     );
+    setSelectedShareQuiz((prev) =>
+      prev && prev.id === quizId ? { ...prev, ...newSettings } : prev
+    );
   };
 
   const handleDeleteConfirm = async () => {
@@ -321,11 +324,7 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
           isOpen={!!selectedShareQuiz}
           onClose={() => setSelectedShareQuiz(null)}
           sharedQuizId={selectedShareQuiz.id}
-          initialSettings={{
-            is_active: selectedShareQuiz.is_active,
-            time_limit_minutes: selectedShareQuiz.time_limit_minutes,
-            show_results: selectedShareQuiz.show_results,
-          }}
+          initialSettings={selectedShareQuiz}
           onUpdateSettings={handleUpdateQuizSettings}
           onShowToast={onShowToast}
         />
