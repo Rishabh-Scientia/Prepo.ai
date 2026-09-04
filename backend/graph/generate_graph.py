@@ -148,11 +148,17 @@ _LATEX_REGEX = re.compile(rf"(?<!\\)\\({_LATEX_PATTERN})(?![a-zA-Z])")
 
 def _sanitize_json_latex(text: str) -> str:
     """
-    Ensure LaTeX commands like \\frac, \\times, \\theta inside raw JSON strings
-    are double-escaped so json.loads does not parse \\f into form feed (\\x0c)
-    or \\t into tab (\\x09) or \\b into backspace (\\x08).
+    Ensure LaTeX commands (\\frac, \\times, \\theta, \\mu, \\text), spaces (\\ , \\,),
+    and math backslashes inside raw JSON strings are safely double-escaped so
+    json.loads parses cleanly without corruption or invalid escape errors.
     """
-    return _LATEX_REGEX.sub(r"\\\\\1", text)
+    # 1. Escape known LaTeX command words
+    t = _LATEX_REGEX.sub(r"\\\\\1", text)
+    # 2. Escape backslash space (\ ) and thin space (\,)
+    t = re.sub(r'(?<!\\)\\([ ,])', r'\\\\\1', t)
+    # 3. Escape any remaining non-JSON single backslashes (e.g. \m in \mu if missed, \o, etc.)
+    t = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', t)
+    return t
 
 
 def _extract_json_dict(raw: str) -> dict:

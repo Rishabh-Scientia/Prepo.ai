@@ -60,38 +60,32 @@
   animation: bounceShort 0.3s ease-out;
 }
 
-/* ── KaTeX Math Formula Overrides ────────────────────────────────────────── */
-.math-rendered-content .katex {
-  font-size: 1em;
-  text-rendering: auto;
-  white-space: normal;
+/* ── KaTeX Math Formula Styling ────────────────────────────────────────── */
+.math-rendered-content {
+  display: inline;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
-/* Force inline display for formulas inside options & question cards so they NEVER split vertically */
+/* Ensure inline KaTeX formulas display cleanly without splitting variables/units across lines */
+.math-rendered-content .katex {
+  font-size: 1.05em;
+  line-height: normal;
+  text-indent: 0;
+  white-space: nowrap !important;
+}
+
 .math-rendered-content .katex-display {
   display: inline-block !important;
-  margin: 0 0.15em !important;
+  margin: 0 0.2em !important;
   padding: 0 !important;
   text-align: left !important;
   vertical-align: middle;
 }
 
-.math-rendered-content .katex-display > .katex {
-  white-space: normal;
-  display: inline-block;
-}
-
-/* Ensure inline KaTeX doesn't break text flow */
 .math-rendered-content .katex-html {
-  white-space: normal;
-  display: inline;
-}
-
-/* Prevent unwanted line breaks inside math options */
-.math-rendered-content {
-  display: inline;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  display: inline-block !important;
+  white-space: nowrap !important;
 }
 
 /* Custom scrollbars */

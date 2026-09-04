@@ -56,13 +56,17 @@ PEDAGOGICAL PROGRESSION & STRUCTURE (MANDATORY):
    - If difficulty is "Mixed": Distribute roughly 30% Easy, 40% Medium, and 30% Hard across the test.
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATHEMATICAL & SCIENTIFIC NOTATION (LATEX FORMATTING):
+MATHEMATICAL & SCIENTIFIC NOTATION (LATEX FORMATTING) — CRITICAL:
 ═══════════════════════════════════════════════════════════════════════════════
-Whenever any question or option contains variables, mathematical expressions, fractions, powers, roots, vectors, integrals, derivatives, Greek letters, chemical formulas, or scientific units:
-- ALWAYS enclose inline math in single dollar signs `$ ... $` (e.g., `$E = mc^2$`, `$\\vec{{F}} = m\\vec{{a}}$`, `$\\int_0^1 x^2 \\, dx$`).
-- Use proper LaTeX commands: `\\frac{{a}}{{b}}`, `\\sqrt{{x}}`, `\\theta`, `\\lambda`, `\\alpha`, `\\pi`, `\\times`, `\\Delta`, `\\Omega`.
+Whenever any question or option contains variables, mathematical expressions, fractions, powers, roots, vectors, integrals, derivatives, Greek letters, chemical formulas, or numbers with scientific units:
+- ALWAYS enclose the ENTIRE mathematical term (both variable/number AND unit) inside a single `$ ... $` block:
+  * Correct: `$q_1 = 2\\ \\mu\\text{{C}}$`, `$q_2 = -3\\ \\mu\\text{{C}}$`, `$r = 5\\text{{ cm}}$`, `$F = 21.6\\text{{ N}}$`
+  * Correct: `$E = mc^2$`, `$\\vec{{F}} = m\\vec{{a}}$`, `$\\frac{{1}}{{4\\pi\\epsilon_0}}$`, `$\\theta = 45^\\circ$`, `$\\Omega$`
+  * WRONG: `$q_1 = 2$` followed by `\\mu\\text{{C}}` outside dollar signs.
+  * WRONG: Splitting formulas or putting raw LaTeX commands outside `$ ... $`.
 - Inside options containing math, format the entire math value in LaTeX (e.g., `["$\\frac{{1}}{{2}}mv^2$", "$mgh$", "$\\frac{{1}}{{2}}kx^2$", "$mv$"]`).
-- Properly double-escape all backslashes in JSON strings (e.g. `\\\\frac`, `\\\\sqrt`, `\\\\pi`).
+- NEVER insert line breaks inside questions or options. Keep each question statement in a single flowing paragraph.
+- Properly double-escape all backslashes in JSON strings (e.g. `\\\\frac`, `\\\\sqrt`, `\\\\mu`, `\\\\text`, `\\\\pi`).
 
 ═══════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT:

@@ -1,14 +1,15 @@
 import React, { useRef, useEffect } from 'react';
 import katex from 'katex';
-import 'katex/dist/contrib/auto-render';
+import renderMathInElement from 'katex/dist/contrib/auto-render.mjs';
 
 /**
  * Normalizes mathematical text:
  * 1. Restores corrupted JSON escape characters (\x0c Form Feed -> \f for \frac, \x08 -> \b, \t -> \t).
  * 2. Strips unwanted newlines in single-line math expressions.
- * 3. Converts common text trigonometric/Greek words (theta, alpha, beta, etc.) into LaTeX commands (\theta, \alpha, \beta).
- * 4. Replaces block delimiters ($$...$$, \[...\]) with inline delimiters so formulas don't split onto multiple lines.
- * 5. Auto-wraps bare LaTeX expressions in mixed sentences into $...$ so KaTeX auto-renders them cleanly.
+ * 3. Merges numbers/variables with adjacent units ($q_1 = 2$ \mu\text{C} -> $q_1 = 2\ \mu\text{C}$).
+ * 4. Converts common text trigonometric/Greek words (theta, alpha, beta, etc.) into LaTeX commands (\theta, \alpha, \beta).
+ * 5. Replaces block delimiters ($$...$$, \[...\]) with inline delimiters so formulas don't split onto multiple lines.
+ * 6. Auto-wraps bare LaTeX expressions in mixed sentences into $...$ so KaTeX auto-renders them cleanly.
  */
 function normalizeMathText(str) {
   if (!str || typeof str !== 'string') return '';
@@ -30,8 +31,7 @@ function normalizeMathText(str) {
   s = s.replace(/\$\$([\s\S]*?)\$\$/g, '$$$1$$');
   s = s.replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$');
 
-  // 3. Auto-convert common math words to LaTeX if backslash was missed by the LLM
-  // e.g. "sin^2 theta" -> "\sin^2 \theta"
+  // 3. Auto-convert common math/Greek words to LaTeX if backslash was missed by the LLM
   const greekAndMathWords = [
     'theta', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'lambda', 'mu', 'pi', 'sigma', 'omega', 'phi', 'psi',
     'sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'log', 'ln', 'lim', 'times', 'cdot', 'approx', 'neq', 'pm'
@@ -42,8 +42,14 @@ function normalizeMathText(str) {
     s = s.replace(regex, `\\${word}`);
   }
 
-  // 4. Auto-wrap bare LaTeX expressions in mixed sentences
-  // e.g. "What is \frac{d}{dx}\int_{0}^{x} f(t),dt?" -> "What is $\frac{d}{dx}\int_{0}^{x} f(t),dt$?"
+  // 4. Merge split math expressions (e.g. "$q_1 = 2$ \mu\text{C}" -> "$q_1 = 2\ \mu\text{C}$")
+  s = s.replace(/\$([^\$]+)\$\s*(\\[a-zA-Z]+(?:\{[^\}]*\})*)/g, '$$$1\\ $2$$');
+  s = s.replace(/\$([^\$]+)\$\s*(\$)/g, '$$$1$$');
+
+  // 5. Auto-wrap bare numbers with units (e.g. "5 \text{cm}" -> "$5\text{cm}$")
+  s = s.replace(/(?<!\$)\b(\d+(?:\.\d+)?)\s*(\\[a-zA-Z]+(?:\{[^\}]*\})*)/g, '$$$1\\ $2$$');
+
+  // 6. Auto-wrap any remaining bare LaTeX expressions in mixed sentences
   const parts = s.split(/(\$[^\$]+\$)/g);
   s = parts.map((part) => {
     if (part.startsWith('$') && part.endsWith('$')) return part;
@@ -93,8 +99,8 @@ export function MathRenderer({ text = '', className = '' }) {
     containerRef.current.textContent = processedText;
 
     try {
-      if (typeof window !== 'undefined' && window.renderMathInElement) {
-        window.renderMathInElement(containerRef.current, {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(containerRef.current, {
           delimiters: [
             { left: '$$', right: '$$', display: false },
             { left: '\\[', right: '\\]', display: false },
@@ -108,7 +114,8 @@ export function MathRenderer({ text = '', className = '' }) {
         renderManually(containerRef.current, processedText);
       }
     } catch (err) {
-      console.warn('KaTeX rendering notice:', err);
+      console.warn('KaTeX rendering notice, falling back to manual renderer:', err);
+      renderManually(containerRef.current, processedText);
     }
   }, [text]);
 
