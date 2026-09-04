@@ -161,18 +161,35 @@ export const api = {
   },
 
   /** Share quiz with students (creates shared quiz entry) */
-  async shareQuiz(sessionId) {
+  async shareQuiz(sessionId, settings = {}) {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/quiz/share`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ session_id: sessionId }),
+      body: JSON.stringify({ session_id: sessionId, ...settings }),
     });
 
     if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(formatApiError(err, `Failed to share quiz (HTTP ${res.status})`));
+    }
+    return res.json();
+  },
+
+  /** Teacher: Update shared quiz settings (is_active, time_limit_minutes, show_results) */
+  async updateSharedQuizSettings(quizId, settings) {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/teacher/shared-quizzes/${quizId}/settings`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(settings),
+    });
+
+    if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(formatApiError(err, `Failed to update quiz settings (HTTP ${res.status})`));
     }
     return res.json();
   },

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import QuestionCard from './QuestionCard';
 import QuestionPalette from './QuestionPalette';
 import LoadingModal from '../common/LoadingModal';
-import { Clock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -16,6 +16,11 @@ export function QuizAttempt({
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const autoSubmittedRef = useRef(false);
+
+  const timeLimitMinutes = quizData?.config?.time_limit_minutes;
+  const totalAllowedSeconds = timeLimitMinutes ? timeLimitMinutes * 60 : null;
+  const remainingSeconds = totalAllowedSeconds !== null ? Math.max(0, totalAllowedSeconds - secondsElapsed) : null;
 
   // Restore saved answers from localStorage if present
   useEffect(() => {
@@ -95,6 +100,16 @@ export function QuizAttempt({
     onSubmit(quizData.session_id, formattedAnswers, secondsElapsed);
   };
 
+  // Auto-Submit on Timeout
+  useEffect(() => {
+    if (!timeLimitMinutes || autoSubmittedRef.current || isEvaluating) return;
+
+    if (remainingSeconds !== null && remainingSeconds <= 0) {
+      autoSubmittedRef.current = true;
+      handleFinalSubmit();
+    }
+  }, [remainingSeconds, timeLimitMinutes, isEvaluating]);
+
   const questions = quizData?.questions || [];
   const answeredCount = Object.keys(selectedAnswers).length;
   const unansweredCount = questions.length - answeredCount;
@@ -117,10 +132,26 @@ export function QuizAttempt({
 
         {/* Timer & Submit */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-100 border border-surface-200 rounded-card text-xs font-semibold text-gray-700">
-            <Clock className="w-3.5 h-3.5 text-primary-600 animate-pulse" />
-            <span>{formatTime(secondsElapsed)}</span>
-          </div>
+          {timeLimitMinutes ? (
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-card text-xs font-bold border transition ${
+              remainingSeconds <= 60
+                ? 'bg-red-50 border-red-300 text-red-700 animate-pulse ring-1 ring-red-400'
+                : remainingSeconds <= 300
+                ? 'bg-amber-50 border-amber-300 text-amber-800'
+                : 'bg-surface-100 border-surface-200 text-gray-700'
+            }`}>
+              <Clock className={`w-3.5 h-3.5 ${
+                remainingSeconds <= 60 ? 'text-red-600' : remainingSeconds <= 300 ? 'text-amber-600' : 'text-primary-600'
+              }`} />
+              <span className="font-mono">{formatTime(remainingSeconds)}</span>
+              <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">left</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-100 border border-surface-200 rounded-card text-xs font-semibold text-gray-700">
+              <Clock className="w-3.5 h-3.5 text-primary-600 animate-pulse" />
+              <span>{formatTime(secondsElapsed)}</span>
+            </div>
+          )}
 
           <button
             type="button"
@@ -142,6 +173,17 @@ export function QuizAttempt({
           </button>
         </div>
       </div>
+
+      {/* Timeout Warning Banner (< 1 min) */}
+      {timeLimitMinutes && remainingSeconds !== null && remainingSeconds <= 60 && remainingSeconds > 0 && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center justify-between gap-2 animate-pulse shadow-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>Less than 1 minute remaining! Assessment will automatically submit when time reaches 00:00.</span>
+          </div>
+          <span className="font-mono font-extrabold text-sm">{remainingSeconds}s</span>
+        </div>
+      )}
 
       {/* ── MAIN CONTENT GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -171,7 +213,7 @@ export function QuizAttempt({
               className="mt-4 px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-card transition shadow-sm inline-flex items-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Submit and View AI Explanations</span>
+              <span>Submit Assessment</span>
             </button>
           </div>
         </div>
@@ -232,6 +274,12 @@ export function QuizAttempt({
                 <span>Time Taken:</span>
                 <span className="font-mono font-bold text-gray-800">{formatTime(secondsElapsed)}</span>
               </div>
+              {timeLimitMinutes && remainingSeconds !== null && (
+                <div className="flex justify-between text-amber-800 font-bold">
+                  <span>Time Remaining:</span>
+                  <span className="font-mono">{formatTime(remainingSeconds)}</span>
+                </div>
+              )}
             </div>
 
             {unansweredCount > 0 && (
@@ -267,7 +315,7 @@ export function QuizAttempt({
       <LoadingModal
         isOpen={isEvaluating}
         type="evaluate"
-        title="Grading Your Practice Test"
+        title="Grading Your Assessment"
         subtitle={`Evaluating ${answeredCount} of ${questions.length} questions for ${quizData?.config?.subject || 'Practice Test'} with 4-part AI reasoning...`}
       />
     </div>

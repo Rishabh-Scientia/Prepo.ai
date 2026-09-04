@@ -11,6 +11,12 @@ import urllib.request
 import urllib.parse
 from typing import Any, Dict, List, Optional
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://cahlcjvndiytjluzhpop.supabase.co")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
@@ -189,14 +195,28 @@ def create_shared_quiz(
     difficulty: str,
     language: str,
     questions: list,
+    is_active: bool = True,
+    time_limit_minutes: Optional[int] = None,
+    show_results: bool = True,
 ) -> Optional[Dict[str, Any]]:
     """
     Create a shared quiz entry in `shared_quizzes` table.
+    Resiliently stores assessment controls (is_active, time_limit_minutes, show_results).
     """
     if not _API_KEY:
         return None
 
+    # Embed settings inside questions[0] for bulletproof fallback
+    if isinstance(questions, list) and len(questions) > 0 and isinstance(questions[0], dict):
+        questions[0]["_quiz_settings"] = {
+            "is_active": is_active,
+            "time_limit_minutes": time_limit_minutes,
+            "show_results": show_results,
+        }
+
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes"
+    
+    # Try inserting with column-level attributes first
     payload = {
         "created_by": created_by,
         "teacher_name": teacher_name,
@@ -206,6 +226,9 @@ def create_shared_quiz(
         "difficulty": difficulty,
         "language": language,
         "questions": questions,
+        "is_active": is_active,
+        "time_limit_minutes": time_limit_minutes,
+        "show_results": show_results,
     }
 
     try:
@@ -219,9 +242,45 @@ def create_shared_quiz(
         with urllib.request.urlopen(req) as response:
             res_body = response.read().decode("utf-8")
             result = json.loads(res_body)
-            if isinstance(result, list) and len(result) > 0:
-                return result[0]
-            return result
+            record = result[0] if isinstance(result, list) and len(result) > 0 else result
+            record["is_active"] = is_active
+            record["time_limit_minutes"] = time_limit_minutes
+            record["show_results"] = show_results
+            return record
+    except urllib.error.HTTPError as he:
+        # If columns don't exist yet in Supabase table, retry with standard schema
+        if he.code == 400:
+            try:
+                base_payload = {
+                    "created_by": created_by,
+                    "teacher_name": teacher_name,
+                    "subject": subject,
+                    "chapter": chapter,
+                    "class_level": class_level,
+                    "difficulty": difficulty,
+                    "language": language,
+                    "questions": questions,
+                }
+                base_bytes = json.dumps(base_payload).encode("utf-8")
+                base_req = urllib.request.Request(
+                    endpoint,
+                    data=base_bytes,
+                    headers=_get_headers(),
+                    method="POST",
+                )
+                with urllib.request.urlopen(base_req) as response:
+                    res_body = response.read().decode("utf-8")
+                    result = json.loads(res_body)
+                    record = result[0] if isinstance(result, list) and len(result) > 0 else result
+                    record["is_active"] = is_active
+                    record["time_limit_minutes"] = time_limit_minutes
+                    record["show_results"] = show_results
+                    return record
+            except Exception as e2:
+                print(f"ERROR creating shared quiz (fallback): {e2}")
+                return None
+        print(f"ERROR creating shared quiz: {he}")
+        return None
     except Exception as e:
         print(f"ERROR creating shared quiz: {e}")
         return None
@@ -230,6 +289,7 @@ def create_shared_quiz(
 def get_shared_quiz(quiz_id: str) -> Optional[Dict[str, Any]]:
     """
     Retrieve shared quiz by ID for students.
+    Includes is_active, time_limit_minutes, and show_results settings.
     """
     if not _API_KEY:
         return None
@@ -256,11 +316,110 @@ def get_shared_quiz(quiz_id: str) -> Optional[Dict[str, Any]]:
                         record["questions"] = json.loads(record["questions"])
                     except Exception:
                         pass
+
+                # Extract settings fallback from questions[0]
+                embedded_settings = {}
+                raw_q = record.get("questions", [])
+                if isinstance(raw_q, list) and len(raw_q) > 0 and isinstance(raw_q[0], dict):
+                    embedded_settings = raw_q[0].get("_quiz_settings", {})
+
+                if record.get("is_active") is None:
+                    record["is_active"] = embedded_settings.get("is_active", True)
+                if record.get("time_limit_minutes") is None:
+                    record["time_limit_minutes"] = embedded_settings.get("time_limit_minutes", None)
+                if record.get("show_results") is None:
+                    record["show_results"] = embedded_settings.get("show_results", True)
+
                 return record
             return None
     except Exception as e:
         print(f"ERROR fetching shared quiz {quiz_id}: {e}")
         return None
+
+
+def update_shared_quiz_settings(
+    quiz_id: str,
+    teacher_id: str,
+    updates: Dict[str, Any],
+) -> bool:
+    """
+    Update settings (is_active, time_limit_minutes, show_results) for a shared quiz.
+    Supports both direct column update and embedded json fallback.
+    """
+    if not _API_KEY or not quiz_id or not teacher_id:
+        return False
+
+    shared_quiz = get_shared_quiz(quiz_id)
+    if not shared_quiz or str(shared_quiz.get("created_by")) != str(teacher_id):
+        return False
+
+    allowed_keys = {"is_active", "time_limit_minutes", "show_results"}
+    clean_updates = {k: v for k, v in updates.items() if k in allowed_keys}
+    if not clean_updates:
+        return True
+
+    params = urllib.parse.urlencode({
+        "id": f"eq.{quiz_id}",
+        "created_by": f"eq.{teacher_id}",
+    })
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{params}"
+
+    # 1. Try direct column update
+    try:
+        data_bytes = json.dumps(clean_updates).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint,
+            data=data_bytes,
+            headers=_get_headers(),
+            method="PATCH",
+        )
+        with urllib.request.urlopen(req) as response:
+            if response.status in (200, 204):
+                # Also ensure questions[0] is updated in case both are queried
+                try:
+                    questions = shared_quiz.get("questions", [])
+                    if isinstance(questions, list) and len(questions) > 0 and isinstance(questions[0], dict):
+                        current_settings = questions[0].get("_quiz_settings", {})
+                        current_settings.update(clean_updates)
+                        questions[0]["_quiz_settings"] = current_settings
+                        q_req = urllib.request.Request(
+                            endpoint,
+                            data=json.dumps({"questions": questions}).encode("utf-8"),
+                            headers=_get_headers(),
+                            method="PATCH",
+                        )
+                        with urllib.request.urlopen(q_req):
+                            pass
+                except Exception:
+                    pass
+                return True
+    except urllib.error.HTTPError:
+        pass
+    except Exception as e:
+        print(f"Direct patch failed, trying embedded fallback: {e}")
+
+    # 2. Embedded fallback in questions[0]
+    try:
+        questions = shared_quiz.get("questions", [])
+        if isinstance(questions, list) and len(questions) > 0 and isinstance(questions[0], dict):
+            current_settings = questions[0].get("_quiz_settings", {})
+            current_settings.update(clean_updates)
+            questions[0]["_quiz_settings"] = current_settings
+
+            q_bytes = json.dumps({"questions": questions}).encode("utf-8")
+            q_req = urllib.request.Request(
+                endpoint,
+                data=q_bytes,
+                headers=_get_headers(),
+                method="PATCH",
+            )
+            with urllib.request.urlopen(q_req) as response:
+                return response.status in (200, 204)
+    except Exception as e:
+        print(f"ERROR updating quiz settings via embedded questions: {e}")
+        return False
+
+    return False
 
 
 def submit_student_response(
@@ -271,10 +430,18 @@ def submit_student_response(
     """
     Evaluate student answers deterministically using pre-stored correct answers,
     and save response into `student_responses` table.
+    Enforces is_active check and respects show_results visibility setting.
     """
     shared_quiz = get_shared_quiz(quiz_id)
     if not shared_quiz:
         return None
+
+    # Check if quiz is active and accepting responses
+    if not shared_quiz.get("is_active", True):
+        return {
+            "error": "TEST_INACTIVE",
+            "message": "This assessment is no longer accepting responses.",
+        }
 
     questions = shared_quiz.get("questions", [])
     answers_map = {a.get("question_id"): a.get("selected_option", "") for a in student_answers}
@@ -308,7 +475,7 @@ def submit_student_response(
             },
         })
 
-    # Insert into student_responses
+    # Insert into student_responses (Teacher always sees full score & evaluation)
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/student_responses"
     payload = {
         "quiz_id": quiz_id,
@@ -331,8 +498,21 @@ def submit_student_response(
             res_body = response.read().decode("utf-8")
             result = json.loads(res_body)
             inserted = result[0] if isinstance(result, list) and len(result) > 0 else result
+
+            show_results = shared_quiz.get("show_results", True)
+            if not show_results:
+                return {
+                    "submission_id": inserted.get("id"),
+                    "score_hidden": True,
+                    "score": None,
+                    "total": total,
+                    "evaluation_results": [],
+                    "message": "Your assessment has been submitted successfully. Scores and solutions are hidden by your instructor.",
+                }
+
             return {
                 "submission_id": inserted.get("id"),
+                "score_hidden": False,
                 "score": score,
                 "total": total,
                 "evaluation_results": evaluation_results,
@@ -344,14 +524,15 @@ def submit_student_response(
 
 def get_teacher_shared_quizzes(teacher_id: str) -> List[Dict[str, Any]]:
     """
-    Retrieve all shared quizzes created by a teacher with student response count.
+    Retrieve all shared quizzes created by a teacher with student response count
+    and assessment settings (is_active, time_limit_minutes, show_results).
     """
     if not _API_KEY:
         return []
 
     params = urllib.parse.urlencode({
         "created_by": f"eq.{teacher_id}",
-        "select": "id,subject,chapter,class_level,difficulty,language,created_at,student_responses(id)",
+        "select": "id,subject,chapter,class_level,difficulty,language,created_at,questions,student_responses(id)",
         "order": "created_at.desc",
     })
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{params}"
@@ -369,6 +550,24 @@ def get_teacher_shared_quizzes(teacher_id: str) -> List[Dict[str, Any]]:
                 responses = q.get("student_responses", [])
                 q["submission_count"] = len(responses) if isinstance(responses, list) else 0
                 q.pop("student_responses", None)
+
+                # Extract settings
+                raw_q = q.get("questions")
+                if isinstance(raw_q, str):
+                    try:
+                        raw_q = json.loads(raw_q)
+                    except Exception:
+                        raw_q = []
+
+                embedded_settings = {}
+                if isinstance(raw_q, list) and len(raw_q) > 0 and isinstance(raw_q[0], dict):
+                    embedded_settings = raw_q[0].get("_quiz_settings", {})
+
+                q["is_active"] = q.get("is_active") if q.get("is_active") is not None else embedded_settings.get("is_active", True)
+                q["time_limit_minutes"] = q.get("time_limit_minutes") if q.get("time_limit_minutes") is not None else embedded_settings.get("time_limit_minutes", None)
+                q["show_results"] = q.get("show_results") if q.get("show_results") is not None else embedded_settings.get("show_results", True)
+                q.pop("questions", None)
+
             return quizzes
     except Exception as e:
         print(f"ERROR fetching teacher shared quizzes: {e}")

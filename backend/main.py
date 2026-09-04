@@ -20,6 +20,8 @@ import json
 import urllib.request
 
 from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -52,6 +54,7 @@ from store.db_store import (
     record_payment,
     delete_user_attempt,
     delete_shared_quiz,
+    update_shared_quiz_settings,
 )
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
@@ -465,6 +468,10 @@ async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
     email = user.get("email", "Teacher")
     teacher_name = email.split("@")[0] if "@" in email else "Teacher"
 
+    time_limit_minutes = payload.get("time_limit_minutes")
+    show_results = payload.get("show_results", True)
+    is_active = payload.get("is_active", True)
+
     shared = create_shared_quiz(
         created_by=user_id,
         teacher_name=teacher_name,
@@ -474,6 +481,9 @@ async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
         difficulty=session_data.get("difficulty", "Medium"),
         language=session_data.get("language", "English"),
         questions=questions,
+        is_active=is_active,
+        time_limit_minutes=time_limit_minutes,
+        show_results=show_results,
     )
 
     if not shared:
@@ -483,6 +493,9 @@ async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
         "shared_quiz_id": shared.get("id"),
         "subject": shared.get("subject"),
         "chapter": shared.get("chapter"),
+        "is_active": shared.get("is_active", True),
+        "time_limit_minutes": shared.get("time_limit_minutes"),
+        "show_results": shared.get("show_results", True),
     }
 
 
@@ -515,6 +528,9 @@ async def get_shared_quiz_questions(quiz_id: str):
         "class_level": shared["class_level"],
         "difficulty": shared["difficulty"],
         "language": shared.get("language", "English"),
+        "is_active": shared.get("is_active", True),
+        "time_limit_minutes": shared.get("time_limit_minutes"),
+        "show_results": shared.get("show_results", True),
         "questions": public_questions,
     }
 
@@ -539,6 +555,12 @@ async def submit_shared_quiz_student(quiz_id: str, payload: dict):
     if not result:
         raise HTTPException(status_code=500, detail="Failed to record submission.")
 
+    if result.get("error") == "TEST_INACTIVE":
+        raise HTTPException(
+            status_code=403,
+            detail="This assessment is no longer accepting responses. Submissions have been closed by the instructor.",
+        )
+
     return result
 
 
@@ -550,6 +572,18 @@ async def get_teacher_quizzes(user: dict = Depends(get_current_user)):
     user_id = user.get("user_id")
     quizzes = get_teacher_shared_quizzes(user_id)
     return {"shared_quizzes": quizzes}
+
+
+@app.patch("/api/teacher/shared-quizzes/{quiz_id}/settings")
+async def update_quiz_settings(quiz_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """
+    Teacher endpoint: Update assessment controls (is_active, time_limit_minutes, show_results).
+    """
+    user_id = user.get("user_id")
+    success = update_shared_quiz_settings(quiz_id, user_id, payload)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update quiz settings.")
+    return {"success": True, "message": "Quiz settings updated successfully."}
 
 
 @app.get("/api/teacher/shared-quizzes/{quiz_id}/responses")

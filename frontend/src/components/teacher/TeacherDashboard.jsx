@@ -8,8 +8,10 @@ import {
   Trophy, 
   Trash2, 
   Calendar, 
-  HelpCircle, 
-  Layers, 
+  Clock, 
+  EyeOff, 
+  Power, 
+  Users, 
   Loader2, 
   PlusCircle, 
   AlertCircle 
@@ -22,9 +24,10 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
 
   // Modals state
   const [selectedLeaderboardQuiz, setSelectedLeaderboardQuiz] = useState(null);
-  const [selectedShareQuizId, setSelectedShareQuizId] = useState(null);
+  const [selectedShareQuiz, setSelectedShareQuiz] = useState(null);
   const [quizToDelete, setQuizToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
 
   const loadTeacherQuizzes = async () => {
     try {
@@ -46,6 +49,44 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   useEffect(() => {
     loadTeacherQuizzes();
   }, []);
+
+  const handleToggleActive = async (quiz) => {
+    const targetId = quiz.id;
+    const currentActive = quiz.is_active !== false;
+    const newActive = !currentActive;
+
+    // Optimistic local update
+    setQuizzes((prev) =>
+      prev.map((q) => (q.id === targetId ? { ...q, is_active: newActive } : q))
+    );
+    setTogglingId(targetId);
+
+    try {
+      await api.updateSharedQuizSettings(targetId, { is_active: newActive });
+      if (onShowToast) {
+        onShowToast(
+          newActive 
+            ? 'Assessment is now active & accepting responses.' 
+            : 'Submissions closed for this assessment.',
+          'success'
+        );
+      }
+    } catch (err) {
+      // Revert state
+      setQuizzes((prev) =>
+        prev.map((q) => (q.id === targetId ? { ...q, is_active: currentActive } : q))
+      );
+      if (onShowToast) onShowToast(err.message || 'Failed to update test status.', 'error');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleUpdateQuizSettings = (quizId, newSettings) => {
+    setQuizzes((prev) =>
+      prev.map((q) => (q.id === quizId ? { ...q, ...newSettings } : q))
+    );
+  };
 
   const handleDeleteConfirm = async () => {
     if (!quizToDelete) return;
@@ -88,7 +129,7 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
             Teacher Shared Quizzes & Leaderboards
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            Manage links shared with students and view instant grading responses
+            Manage assessment timers, close/enable submissions, and view student responses in real time
           </p>
         </div>
 
@@ -135,44 +176,81 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {quizzes.map((quiz) => {
             const questionCount = Array.isArray(quiz.questions) ? quiz.questions.length : '?';
+            const isActive = quiz.is_active !== false;
+            const hasTimer = Boolean(quiz.time_limit_minutes && quiz.time_limit_minutes > 0);
+            const isScoreHidden = quiz.show_results === false;
 
             return (
               <div
                 key={quiz.id}
-                className="bg-white rounded-card border border-surface-200 shadow-subtle p-5 flex flex-col justify-between hover:border-primary-300 transition"
+                className={`bg-white rounded-card border shadow-subtle p-5 flex flex-col justify-between transition ${
+                  isActive ? 'border-surface-200 hover:border-primary-300' : 'border-gray-200 bg-gray-50/60 opacity-90'
+                }`}
               >
                 <div>
+                  {/* Top Header Row */}
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="text-[11px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">
-                      {quiz.subject}
-                    </span>
-                    <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">
+                        {quiz.subject}
+                      </span>
+                      {/* Active Status Badge */}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                        isActive 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-gray-100 text-gray-600 border-gray-300'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                        <span>{isActive ? 'Accepting' : 'Closed'}</span>
+                      </span>
+                    </div>
+
+                    <span className="text-[11px] text-gray-400 flex items-center gap-1 shrink-0">
                       <Calendar className="w-3 h-3" />
                       {formatDate(quiz.created_at)}
                     </span>
                   </div>
 
+                  {/* Title */}
                   <h3 className="text-sm font-bold text-gray-900 leading-snug">
                     {quiz.chapter || quiz.class_level}
                   </h3>
 
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500">
-                    <span>{quiz.class_level}</span>
-                    <span>•</span>
-                    <span>{questionCount} Questions</span>
-                    <span>•</span>
-                    <span>{quiz.difficulty || 'Medium'}</span>
+                  {/* Meta Tags & Badges */}
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
+                    <span className="bg-surface-100 px-2 py-0.5 rounded font-medium text-gray-600 border border-surface-200">
+                      {quiz.class_level}
+                    </span>
+                    <span className="bg-surface-100 px-2 py-0.5 rounded font-medium text-gray-600 border border-surface-200">
+                      {quiz.difficulty || 'Medium'}
+                    </span>
+                    {hasTimer && (
+                      <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>{quiz.time_limit_minutes}m Limit</span>
+                      </span>
+                    )}
+                    {isScoreHidden && (
+                      <span className="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                        <EyeOff className="w-3 h-3 text-purple-600" />
+                        <span>Scores Hidden</span>
+                      </span>
+                    )}
+                    <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>{quiz.submission_count || 0} Submissions</span>
+                    </span>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-5 pt-3 border-t border-surface-100 flex items-center justify-between gap-3">
+                {/* Bottom Actions Bar */}
+                <div className="mt-5 pt-3 border-t border-surface-100 flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setSelectedShareQuizId(quiz.id)}
+                      onClick={() => setSelectedShareQuiz(quiz)}
                       className="px-3 py-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
-                      title="Share Quiz Link & Code"
+                      title="Share Quiz Link & Controls"
                     >
                       <Share2 className="w-3.5 h-3.5 text-amber-600" />
                       <span>Share</span>
@@ -189,14 +267,37 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setQuizToDelete(quiz)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
-                    title="Delete Shared Quiz"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Active/Disable Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActive(quiz)}
+                      disabled={togglingId === quiz.id}
+                      title={isActive ? 'Disable/Close Submissions' : 'Enable/Accept Submissions'}
+                      className={`px-2.5 py-1.5 text-xs font-bold rounded-lg border transition flex items-center gap-1.5 shadow-xs ${
+                        isActive
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                      }`}
+                    >
+                      {togglingId === quiz.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Power className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-gray-500'}`} />
+                      )}
+                      <span>{isActive ? 'Accepting' : 'Disabled'}</span>
+                    </button>
+
+                    {/* Delete Quiz */}
+                    <button
+                      type="button"
+                      onClick={() => setQuizToDelete(quiz)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
+                      title="Delete Shared Quiz"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -214,12 +315,18 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
         />
       )}
 
-      {/* ── SHARE MODAL ── */}
-      {selectedShareQuizId && (
+      {/* ── SHARE & SETTINGS MODAL ── */}
+      {selectedShareQuiz && (
         <ShareQuizModal
-          isOpen={!!selectedShareQuizId}
-          onClose={() => setSelectedShareQuizId(null)}
-          sharedQuizId={selectedShareQuizId}
+          isOpen={!!selectedShareQuiz}
+          onClose={() => setSelectedShareQuiz(null)}
+          sharedQuizId={selectedShareQuiz.id}
+          initialSettings={{
+            is_active: selectedShareQuiz.is_active,
+            time_limit_minutes: selectedShareQuiz.time_limit_minutes,
+            show_results: selectedShareQuiz.show_results,
+          }}
+          onUpdateSettings={handleUpdateQuizSettings}
           onShowToast={onShowToast}
         />
       )}
