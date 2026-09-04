@@ -50,11 +50,11 @@ CRITICAL INSTRUCTIONS & GUARDRAILS:
     - Whenever a question or option contains mathematical formulas, expressions, variables, fractions, powers, roots, trigonometry, calculus, matrices, Greek letters, or numbers with units:
       ALWAYS enclose the complete expression (number + unit together) in standard LaTeX syntax inside single dollar signs `$ ... $` for inline math or `$$ ... $$` for display math.
       Examples:
-      * Expressions & units: `$q_1 = 2\\ \\mu\\text{C}$`, `$r = 5\\text{ cm}$`, `$\\tan^{-1} x + \\tan^{-1} 2x = \\frac{\\pi}{4}$`, `$\\sin\\theta$`
-      * Fractions & powers: `$\\frac{\\pi}{6}$`, `$\\frac{\\sqrt{3}}{2}$`, `$x^2 + y^2 = r^2$`, `$\\sqrt{b^2 - 4ac}$`
-      * Calculus: `$\\int_{0}^{\\pi} \\sin x \\, dx$`, `$\\lim_{x \\to 0} \\frac{\\sin x}{x}$`
+      * Expressions & units: `$q_1 = 2\\ \\mu\\text{{C}}$`, `$r = 5\\text{{ cm}}$`, `$\\tan^{{-1}} x + \\tan^{{-1}} 2x = \\frac{{\\pi}}{{4}}$`, `$\\sin\\theta$`
+      * Fractions & powers: `$\\frac{{\\pi}}{{6}}$`, `$\\frac{{\\sqrt{{3}}}}{{2}}$`, `$x^2 + y^2 = r^2$`, `$\\sqrt{{b^2 - 4ac}}$`
+      * Calculus: `$\\int_{{0}}^{{\\pi}} \\sin x \\, dx$`, `$\\lim_{{x \\to 0}} \\frac{{\\sin x}}{{x}}$`
     - NEVER put raw LaTeX commands or units outside `$ ... $`.
-    - Options containing formulas must be formatted in LaTeX (e.g. `["$\\frac{\\pi}{6}$", "$\\frac{\\pi}{3}$", "$\\frac{\\pi}{4}$", "$\\frac{\\pi}{2}$"]`).
+    - Options containing formulas must be formatted in LaTeX (e.g. `["$\\frac{{\\pi}}{{6}}$", "$\\frac{{\\pi}}{{3}}$", "$\\frac{{\\pi}}{{4}}$", "$\\frac{{\\pi}}{{2}}$"]`).
     - Never use plain text approximations like 'pi/6', 'tan^-1(x)', 'sqrt(x)' or raw unicode when LaTeX represents it cleanly.
     - Ensure all LaTeX backslashes inside JSON strings are properly escaped (e.g. `\\frac`, `\\pi`, `\\theta`, `\\sqrt`, `\\mu`, `\\text`).
 
