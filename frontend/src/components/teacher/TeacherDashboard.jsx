@@ -34,7 +34,6 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   const [quizToDelete, setQuizToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
-  const [seedingId, setSeedingId] = useState(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,21 +100,6 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
     setSelectedShareQuiz((prev) =>
       prev && prev.id === quizId ? { ...prev, ...newSettings } : prev
     );
-  };
-
-  const handleSeedMockResponses = async (quiz) => {
-    setSeedingId(quiz.id);
-    try {
-      const res = await api.seedMockResponses(quiz.id);
-      if (onShowToast) onShowToast(`Added 4 AI mock student submissions to "${quiz.subject}"!`, 'success');
-      setQuizzes((prev) =>
-        prev.map((q) => (q.id === quiz.id ? { ...q, submission_count: (q.submission_count || 0) + (res.count || 4) } : q))
-      );
-    } catch (err) {
-      if (onShowToast) onShowToast(err.message || 'Failed to generate mock responses.', 'error');
-    } finally {
-      setSeedingId(null);
-    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -445,16 +429,17 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                 </div>
 
                 {/* Bottom Actions Bar */}
-                <div className="mt-5 pt-3 border-t border-surface-100 flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2">
+                <div className="mt-4 pt-3.5 border-t border-surface-100 space-y-2">
+                  {/* Primary Row: Share & Leaderboard */}
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       disabled={!isActive}
                       onClick={() => isActive && setSelectedShareQuiz(quiz)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition flex items-center gap-1.5 shadow-xs ${
+                      className={`w-full py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5 shadow-2xs ${
                         isActive
-                          ? 'text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-200 cursor-pointer'
-                          : 'text-gray-400 bg-gray-100/80 border-gray-200 opacity-40 cursor-not-allowed pointer-events-none filter blur-[0.4px] grayscale'
+                          ? 'text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-200 cursor-pointer active:scale-98'
+                          : 'text-gray-400 bg-gray-100/80 border-gray-200 opacity-40 cursor-not-allowed pointer-events-none'
                       }`}
                       title={isActive ? "Share Quiz Link & Controls" : "Test disabled — enable responses to share"}
                     >
@@ -465,63 +450,44 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                     <button
                       type="button"
                       onClick={() => setSelectedLeaderboardQuiz(quiz)}
-                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition flex items-center gap-1.5 shadow-sm hover:shadow-md"
+                      className="w-full py-2 px-3 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-sm active:scale-98"
                       title="View Student Responses & Leaderboard"
                     >
                       <Trophy className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Responses & Rankings</span>
+                      <span>Leaderboard</span>
                       {(quiz.submission_count || 0) > 0 && (
                         <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-white/20 rounded-full font-extrabold">
                           {quiz.submission_count}
                         </span>
                       )}
                     </button>
-
-                    {(quiz.submission_count || 0) === 0 && (
-                      <button
-                        type="button"
-                        disabled={seedingId === quiz.id}
-                        onClick={() => handleSeedMockResponses(quiz)}
-                        className="px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
-                        title="Simulate 4 realistic AI student submissions to preview leaderboard"
-                      >
-                        {seedingId === quiz.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600" />
-                        ) : (
-                          <Sparkles className="w-3.5 h-3.5 text-primary-600" />
-                        )}
-                        <span className="hidden sm:inline">+4 AI Demo</span>
-                        <span className="sm:hidden">+4</span>
-                      </button>
-                    )}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {/* Active/Disable Toggle Button */}
+                  {/* Secondary Controls: Status Toggle & Delete */}
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
                     <button
                       type="button"
                       onClick={() => handleToggleActive(quiz)}
                       disabled={togglingId === quiz.id}
                       title={isActive ? 'Disable/Close Submissions' : 'Enable/Accept Submissions'}
-                      className={`px-2.5 py-1.5 text-xs font-bold rounded-lg border transition flex items-center gap-1.5 shadow-xs ${
+                      className={`flex-1 py-1.5 px-3 text-[11px] font-bold rounded-lg border transition flex items-center justify-center gap-1.5 ${
                         isActive
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
                       }`}
                     >
                       {togglingId === quiz.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                       ) : (
-                        <Power className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-gray-500'}`} />
+                        <Power className={`w-3 h-3 ${isActive ? 'text-emerald-600' : 'text-gray-500'}`} />
                       )}
-                      <span>{isActive ? 'Accepting' : 'Disabled'}</span>
+                      <span>{isActive ? 'Accepting Responses' : 'Submissions Closed'}</span>
                     </button>
 
-                    {/* Delete Quiz */}
                     <button
                       type="button"
                       onClick={() => setQuizToDelete(quiz)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-100 shrink-0"
                       title="Delete Shared Quiz"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -152,7 +152,7 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-gray-900">Student Responses & Rankings</h3>
+                <h3 className="text-base font-bold text-gray-900">Leaderboard</h3>
                 <p className="text-xs text-gray-500 truncate max-w-xs sm:max-w-md">
                   {quizTitle || 'Classroom Assessment'}
                 </p>
@@ -162,30 +162,14 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
 
           <div className="flex items-center gap-2">
             {!inspectingStudent && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSeedMockResponses}
-                  disabled={seeding || loading}
-                  className="px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
-                  title="Add 4 simulated student responses"
-                >
-                  {seeding ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5 text-primary-600" />
-                  )}
-                  <span className="hidden sm:inline">+4 AI Demo</span>
-                </button>
-                <button
-                  onClick={loadResponses}
-                  disabled={loading}
-                  className="p-2 text-gray-500 hover:text-gray-800 rounded-lg transition-colors hover:bg-surface-100"
-                  title="Refresh Submissions"
-                >
-                  <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-              </>
+              <button
+                onClick={loadResponses}
+                disabled={loading}
+                className="p-2 text-gray-500 hover:text-gray-800 rounded-lg transition-colors hover:bg-surface-100"
+                title="Refresh Submissions"
+              >
+                <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
             )}
             <button
               onClick={onClose}
@@ -251,63 +235,44 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
               <div>
                 <p className="text-sm font-bold text-gray-800">No student submissions yet</p>
                 <p className="text-xs text-gray-400 max-w-sm mx-auto mt-1 leading-relaxed">
-                  Share the test link with your class, or click below to simulate 4 AI student responses to test the response viewer.
+                  Share the quiz link with your students. Once they submit, their rank, score, accuracy, and detailed response cards will appear here.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleSeedMockResponses}
-                disabled={seeding}
-                className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white text-xs font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 active:scale-95"
-              >
-                {seeding ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Simulating Submissions...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Simulate 4 AI Student Responses</span>
-                  </>
-                )}
-              </button>
             </div>
           ) : (
-            /* ── SUBMISSIONS TABLE ── */
-            <div className="border border-surface-200 rounded-xl overflow-hidden shadow-xs bg-white">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-surface-50 border-b border-surface-200 text-gray-600 font-bold uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3 px-3 text-center w-12">Rank</th>
-                    <th className="py-3 px-3.5">Student Name</th>
-                    <th className="py-3 px-3.5 text-center">Score</th>
-                    <th className="py-3 px-3.5 text-center">Accuracy</th>
-                    <th className="py-3 px-3.5 text-right hidden sm:table-cell">Submitted At</th>
-                    <th className="py-3 px-3.5 text-right">Responses</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-100">
-                  {responses.map((resp, idx) => {
-                    const pct = Math.round((resp.score / resp.total) * 100);
-                    return (
-                      <tr 
-                        key={resp.id || idx} 
-                        onClick={() => setInspectingStudent(resp)}
-                        className="hover:bg-primary-50/50 transition-colors cursor-pointer group"
-                      >
-                        <td className="py-3.5 px-3 text-center font-bold text-gray-600">
+            /* ── SUBMISSIONS LIST (RESPONSIVE) ── */
+            <div className="space-y-3">
+              {/* Mobile View (sm:hidden): Clean Stacked Student Cards */}
+              <div className="space-y-2.5 sm:hidden">
+                {responses.map((resp, idx) => {
+                  const pct = Math.round((resp.score / resp.total) * 100);
+                  return (
+                    <div
+                      key={resp.id || idx}
+                      onClick={() => setInspectingStudent(resp)}
+                      className="p-3.5 bg-white rounded-xl border border-surface-200 flex items-center justify-between gap-3 shadow-2xs hover:border-primary-300 transition-all cursor-pointer active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-surface-100 border border-surface-200 flex items-center justify-center font-bold text-sm shrink-0">
                           {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                        </td>
-                        <td className="py-3.5 px-3.5 font-bold text-gray-900 group-hover:text-primary-700 transition-colors">
-                          {resp.student_name || 'Anonymous Student'}
-                        </td>
-                        <td className="py-3.5 px-3.5 text-center font-mono font-bold text-gray-800">
-                          {resp.score} / {resp.total}
-                        </td>
-                        <td className="py-3.5 px-3.5 text-center">
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-gray-900 truncate">
+                            {resp.student_name || 'Anonymous Student'}
+                          </h4>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {formatDate(resp.submitted_at)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-gray-900 font-mono">
+                            {resp.score} / {resp.total}
+                          </div>
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                            className={`inline-block px-2 py-0.2 rounded-full font-bold text-[10px] mt-0.5 ${
                               pct >= 80
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : pct >= 50
@@ -317,28 +282,90 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
                           >
                             {pct}%
                           </span>
-                        </td>
-                        <td className="py-3.5 px-3.5 text-right text-gray-500 hidden sm:table-cell">
-                          {formatDate(resp.submitted_at)}
-                        </td>
-                        <td className="py-3.5 px-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInspectingStudent(resp);
-                            }}
-                            className="px-2.5 py-1 text-[11px] font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg border border-primary-200 transition inline-flex items-center gap-1 shadow-2xs"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>View</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInspectingStudent(resp);
+                          }}
+                          className="p-1.5 text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg border border-primary-200 transition shadow-2xs"
+                          title="View Answers"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop View (hidden sm:block): Full Table with horizontal scroll */}
+              <div className="hidden sm:block border border-surface-200 rounded-xl overflow-x-auto shadow-xs bg-white">
+                <table className="w-full text-left text-xs min-w-[540px]">
+                  <thead className="bg-surface-50 border-b border-surface-200 text-gray-600 font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-3 text-center w-12">Rank</th>
+                      <th className="py-3 px-3.5">Student Name</th>
+                      <th className="py-3 px-3.5 text-center">Score</th>
+                      <th className="py-3 px-3.5 text-center">Accuracy</th>
+                      <th className="py-3 px-3.5 text-right">Submitted At</th>
+                      <th className="py-3 px-3.5 text-right">Responses</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-100">
+                    {responses.map((resp, idx) => {
+                      const pct = Math.round((resp.score / resp.total) * 100);
+                      return (
+                        <tr 
+                          key={resp.id || idx} 
+                          onClick={() => setInspectingStudent(resp)}
+                          className="hover:bg-primary-50/50 transition-colors cursor-pointer group"
+                        >
+                          <td className="py-3.5 px-3 text-center font-bold text-gray-600">
+                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                          </td>
+                          <td className="py-3.5 px-3.5 font-bold text-gray-900 group-hover:text-primary-700 transition-colors">
+                            {resp.student_name || 'Anonymous Student'}
+                          </td>
+                          <td className="py-3.5 px-3.5 text-center font-mono font-bold text-gray-800">
+                            {resp.score} / {resp.total}
+                          </td>
+                          <td className="py-3.5 px-3.5 text-center">
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                                pct >= 80
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : pct >= 50
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              }`}
+                            >
+                              {pct}%
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3.5 text-right text-gray-500">
+                            {formatDate(resp.submitted_at)}
+                          </td>
+                          <td className="py-3.5 px-3.5 text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInspectingStudent(resp);
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg border border-primary-200 transition inline-flex items-center gap-1 shadow-2xs"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>View</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

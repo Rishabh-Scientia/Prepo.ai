@@ -26,33 +26,47 @@ export function UserProfile({
       
       {/* ── PROFILE HERO CARD ── */}
       <div className="bg-white rounded-xl border border-surface-200 shadow-subtle overflow-hidden mb-8">
-        {/* Gradient Header Strip */}
-        <div className="h-24 bg-gradient-to-r from-primary-600 via-primary-500 to-blue-500 relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent)]" />
+        {/* Gradient Header Strip with Mode Switch */}
+        <div className="h-20 sm:h-24 bg-gradient-to-r from-primary-700 via-primary-600 to-blue-600 relative px-4 sm:px-6 flex items-center justify-end">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.18),transparent)]" />
+          
+          <button
+            type="button"
+            onClick={onToggleUserMode}
+            className="relative z-10 inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border border-white/30 shadow-xs transition active:scale-95 cursor-pointer"
+            title="Click to toggle Teacher / Student Mode"
+          >
+            {userMode === 'teacher' ? (
+              <>
+                <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+                <span>Teacher Mode</span>
+              </>
+            ) : (
+              <>
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-300" />
+                <span>Student Mode</span>
+              </>
+            )}
+            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full text-white font-semibold">
+              Switch
+            </span>
+          </button>
         </div>
 
-        <div className="px-6 pb-6 pt-2 relative">
+        <div className="px-4 sm:px-6 pb-6 pt-2 relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             {/* Avatar & Info */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="-mt-12 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg border-4 border-white shrink-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div className="-mt-10 sm:-mt-12 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-bold shadow-lg border-4 border-white shrink-0">
                 {userInitial}
               </div>
-              <div className="pt-1 sm:pt-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{displayName}</h2>
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    userMode === 'teacher' 
-                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
-                      : 'bg-primary-50 text-primary-700 border-primary-200'
-                  }`}>
-                    {userMode === 'teacher' ? <BookOpen className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
-                    <span>{userMode === 'teacher' ? 'Teacher Mode' : 'Student Mode'}</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-1">
+              <div className="pt-0.5 sm:pt-0">
+                <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 leading-tight">
+                  {displayName}
+                </h2>
+                <div className="flex items-center gap-1.5 mt-0.5 text-gray-500">
                   <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <p className="text-sm text-gray-500 font-medium">{user?.email}</p>
+                  <p className="text-xs sm:text-sm font-medium truncate">{user?.email}</p>
                 </div>
               </div>
             </div>
