@@ -1,10 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import html2pdf from 'html2pdf.js';
 import ExplanationCard from '../explanations/ExplanationCard';
 import { 
   Award, 
-  Download, 
   RotateCcw, 
   Share2, 
   CheckCircle2, 
@@ -24,8 +22,6 @@ export function QuizResults({
   isStudentMode = false,
   onCloseAssessment,
 }) {
-  const printableRef = useRef(null);
-
   const score = resultsData?.score || 0;
   const total = resultsData?.total || resultsData?.results?.length || 1;
   const percentage = Math.round((score / total) * 100);
@@ -54,37 +50,10 @@ export function QuizResults({
 
   const grade = getGradeInfo(percentage);
 
-  const handleDownloadPDF = () => {
-    if (!printableRef.current) return;
-
-    if (onShowToast) onShowToast('Generating PDF Report...', 'info');
-
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: `Prepo_Quiz_${resultsData?.config?.subject || 'Assessment'}_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(printableRef.current)
-      .save()
-      .then(() => {
-        if (onShowToast) onShowToast('PDF report downloaded successfully!', 'success');
-      })
-      .catch((err) => {
-        console.error('PDF export error:', err);
-        if (onShowToast) onShowToast('Could not export PDF. Please try again.', 'error');
-      });
-  };
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 animate-fadeIn pb-20">
       
-      {/* ── PRINTABLE CONTAINER ── */}
-      <div ref={printableRef} className="space-y-6">
+      <div className="space-y-6">
         
         {/* Score Summary Card */}
         <div className="bg-white rounded-card border border-surface-200 shadow-subtle p-6 sm:p-8 text-center relative overflow-hidden">
@@ -140,15 +109,6 @@ export function QuizResults({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleDownloadPDF}
-              className="px-3.5 py-1.5 bg-surface-100 hover:bg-surface-200 text-gray-800 text-xs font-bold rounded-card border border-surface-300 transition flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5 text-gray-600" />
-              <span>Download PDF</span>
-            </button>
-
             {onShareQuiz && (
               <button
                 type="button"

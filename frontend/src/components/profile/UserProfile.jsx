@@ -91,7 +91,6 @@ export function UserProfile({
               <History className="w-4 h-4" />
               <span>My Practice Tests & Performance</span>
             </div>
-            <span className="text-xs text-gray-400 font-medium">Student Learning Dashboard</span>
           </div>
           <AttemptHistory onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
         </div>

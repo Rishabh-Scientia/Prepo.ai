@@ -206,35 +206,23 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
 
       {/* ── QUICK METRICS CARDS ── */}
       {quizzes.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
-          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xl font-extrabold text-gray-900">{quizzes.length}</div>
-              <div className="text-[11px] font-medium text-gray-500">Total Assessments</div>
-            </div>
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 mb-6">
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-surface-200 shadow-xs text-center">
+            <Layers className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
+            <p className="text-xl sm:text-2xl font-extrabold text-gray-900">{quizzes.length}</p>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium leading-tight">Total Assessments</p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xl font-extrabold text-gray-900">{activeQuizzesCount}</div>
-              <div className="text-[11px] font-medium text-gray-500">Accepting Responses</div>
-            </div>
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-surface-200 shadow-xs text-center">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto mb-1.5" />
+            <p className="text-xl sm:text-2xl font-extrabold text-gray-900">{activeQuizzesCount}</p>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium leading-tight">Accepting Responses</p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xl font-extrabold text-gray-900">{totalSubmissions}</div>
-              <div className="text-[11px] font-medium text-gray-500">Total Submissions</div>
-            </div>
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-surface-200 shadow-xs text-center">
+            <Users className="w-5 h-5 text-amber-500 mx-auto mb-1.5" />
+            <p className="text-xl sm:text-2xl font-extrabold text-gray-900">{totalSubmissions}</p>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium leading-tight">Total Submissions</p>
           </div>
         </div>
       )}

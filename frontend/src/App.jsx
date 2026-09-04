@@ -372,12 +372,14 @@ export function App() {
 
       const res = await api.evaluateQuiz(sessionId, answers);
 
+      const quizSessionId = sessionId || activeQuizData?.session_id;
       setEvaluationResults({
         score: res.score,
         total: res.total,
         results: res.results,
         config: activeQuizData?.config || {},
         timeElapsed,
+        session_id: quizSessionId,
       });
 
       // Clear active ongoing quiz now that it has been evaluated
@@ -396,9 +398,13 @@ export function App() {
 
   // Teacher Share Quiz Action
   const handleShareCurrentQuiz = async () => {
-    if (!activeQuizData?.session_id) return;
+    const sessId = activeQuizData?.session_id || evaluationResults?.session_id;
+    if (!sessId) {
+      showToast('No active quiz found to share.', 'error');
+      return;
+    }
     try {
-      const res = await api.shareQuiz(activeQuizData.session_id);
+      const res = await api.shareQuiz(sessId);
       if (res && res.shared_quiz_id) {
         setSharedQuizIdForModal(res.shared_quiz_id);
       }
@@ -551,7 +557,7 @@ export function App() {
               } catch {}
               setCurrentPage('config');
             }}
-            onShareQuiz={isLoggedIn ? handleShareCurrentQuiz : null}
+            onShareQuiz={isLoggedIn && userMode === 'teacher' ? handleShareCurrentQuiz : null}
             onShowToast={showToast}
           />
         )}

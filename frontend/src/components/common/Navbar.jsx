@@ -416,24 +416,6 @@ export function Navbar({
             </div>
           ) : null}
 
-          {/* Pricing Option */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              openBuyCreditsModal();
-            }}
-            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:text-amber-800 bg-surface-50 hover:bg-amber-50 rounded-xl flex items-center justify-between border border-surface-200 transition-colors"
-          >
-            <span className="flex items-center gap-2.5">
-              <CreditCard className="w-4 h-4 text-amber-500" />
-              <span>Pricing</span>
-            </span>
-            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-              {credits} Credits
-            </span>
-          </button>
-
           {hasActiveQuiz && (
             <button
               onClick={() => {
