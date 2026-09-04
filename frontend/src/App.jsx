@@ -7,6 +7,7 @@ import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import Toast from './components/common/Toast';
 import ErrorModal from './components/common/ErrorModal';
+import LoadingModal from './components/common/LoadingModal';
 import SignInModal from './components/auth/SignInModal';
 import SignUpModal from './components/auth/SignUpModal';
 import BuyCreditsModal from './components/billing/BuyCreditsModal';
@@ -36,6 +37,7 @@ export function App() {
   const [activeQuizData, setActiveQuizData] = useState(null);
   const [evaluationResults, setEvaluationResults] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingMeta, setGeneratingMeta] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   // Student Shared Quiz ID from query string
@@ -109,6 +111,10 @@ export function App() {
 
     try {
       setIsGenerating(true);
+      setGeneratingMeta({
+        title: 'Generating AI Practice Test',
+        subtitle: `${config.subject} • ${config.chapter} (${config.class_level})`,
+      });
       setLastAction(() => () => handleGenerateTopicQuiz(config));
 
       const data = await api.generateQuiz(config);
@@ -135,6 +141,7 @@ export function App() {
       }
     } finally {
       setIsGenerating(false);
+      setGeneratingMeta(null);
     }
   };
 
@@ -147,6 +154,10 @@ export function App() {
 
     try {
       setIsGenerating(true);
+      setGeneratingMeta({
+        title: 'Extracting AI Quiz from Document',
+        subtitle: `Analyzing ${filename} and formulating conceptual MCQs...`,
+      });
       setLastAction(() => () => handleGenerateDocQuiz(formData, filename));
 
       const data = await api.generateQuizFromDoc(formData);
@@ -171,6 +182,7 @@ export function App() {
       }
     } finally {
       setIsGenerating(false);
+      setGeneratingMeta(null);
     }
   };
 
@@ -379,6 +391,14 @@ export function App() {
         message={toast.message}
         type={toast.type}
         onClose={() => setToast({ message: '', type: 'success' })}
+      />
+
+      {/* ── AI QUIZ GENERATION LOADING POPUP ── */}
+      <LoadingModal
+        isOpen={isGenerating}
+        type="generate"
+        title={generatingMeta?.title || (configMode === 'doc' ? 'Extracting AI Quiz from Document' : 'Generating AI Practice Test')}
+        subtitle={generatingMeta?.subtitle || 'Formulating high-yield exam questions with 4-part AI reasoning...'}
       />
 
     </div>

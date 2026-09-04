@@ -247,20 +247,21 @@ export function Navbar({ onNavigate, currentPage }) {
 
           <button
             onClick={() => handleNavClick('home')}
-            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg flex items-center gap-2.5 transition-colors ${
               currentPage === 'home' ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-700 hover:bg-surface-50'
             }`}
           >
-            Home
+            <Home className={`w-4 h-4 ${currentPage === 'home' ? 'text-primary-600' : 'text-gray-400'}`} />
+            <span>Home</span>
           </button>
 
           <button
             onClick={() => handleNavClick('config')}
-            className={`w-full text-left px-3.5 py-2.5 text-sm font-bold rounded-xl flex items-center gap-2.5 transition-all shadow-sm ${
-              currentPage === 'config' ? 'bg-primary-700 text-white' : 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
+            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg flex items-center gap-2.5 transition-colors ${
+              currentPage === 'config' ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-gray-700 hover:bg-surface-50'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-primary-200" />
+            <Sparkles className={`w-4 h-4 ${currentPage === 'config' ? 'text-primary-600' : 'text-primary-500'}`} />
             <span>Create Test</span>
           </button>
 
@@ -315,27 +316,11 @@ export function Navbar({ onNavigate, currentPage }) {
                 setIsMobileMenuOpen(false);
                 openSignIn();
               }}
-              className="w-full mt-2 py-2.5 text-center text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg transition shadow-sm"
+              className="w-full mt-2 py-2.5 text-center text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-lg transition shadow-sm"
             >
               Sign In / Sign Up
             </button>
           )}
-
-          {/* Mobile Footer Your Bench Attribution & Links */}
-          <div className="pt-3 mt-3 border-t border-surface-200 text-center">
-            <p className="text-[11px] text-gray-500 mb-2">
-              A <strong className="font-extrabold"><span className="text-emerald-600">Your</span> <span className="text-gray-900">Bench</span></strong> Product
-            </p>
-            <div className="flex items-center justify-center gap-3 text-xs text-gray-600">
-              <a href="https://your-bench-flax.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">Website</a>
-              <span>•</span>
-              <a href="https://www.instagram.com/your.bench" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">Instagram</a>
-              <span>•</span>
-              <a href="https://www.linkedin.com/company/yourbench/" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition">LinkedIn</a>
-              <span>•</span>
-              <a href="mailto:yoursbench@gmail.com" className="hover:text-primary-600 transition">Email</a>
-            </div>
-          </div>
         </div>
       )}
     </nav>

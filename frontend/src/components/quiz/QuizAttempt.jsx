@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import QuestionCard from './QuestionCard';
 import QuestionPalette from './QuestionPalette';
+import LoadingModal from '../common/LoadingModal';
 import { Clock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E'];
@@ -261,6 +262,14 @@ export function QuizAttempt({
         </div>,
         document.body
       )}
+
+      {/* ── GRADING / EVALUATION LOADING POPUP ── */}
+      <LoadingModal
+        isOpen={isEvaluating}
+        type="evaluate"
+        title="Grading Your Practice Test"
+        subtitle={`Evaluating ${answeredCount} of ${questions.length} questions for ${quizData?.config?.subject || 'Practice Test'} with 4-part AI reasoning...`}
+      />
     </div>
   );
 }
