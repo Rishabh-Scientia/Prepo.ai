@@ -119,9 +119,25 @@ export function QuizAttempt({
       
       {/* ── STICKY TOP BAR ── */}
       <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-sm border-b border-surface-200 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 shadow-subtle mb-6 flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">
+        <div className="min-w-0 flex items-center gap-2">
+          {onExit && (
+            <button
+              type="button"
+              onClick={() => {
+                const confirmExit = window.confirm(
+                  'Are you sure you want to pause or exit this test?\n\nYour selected answers are safely saved, and you can resume anytime.'
+                );
+                if (confirmExit) onExit();
+              }}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-surface-100 transition shrink-0"
+              title="Pause and Exit Test"
+              aria-label="Exit Test"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200 truncate">
               {quizData.config?.subject || 'Practice Test'}
             </span>
             <span className="text-xs text-gray-500 truncate hidden sm:inline">

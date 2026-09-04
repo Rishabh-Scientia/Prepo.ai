@@ -12,7 +12,8 @@ import {
   Clock, 
   Layers, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
 
 export function QuizResults({
@@ -20,6 +21,8 @@ export function QuizResults({
   onRetake,
   onShareQuiz,
   onShowToast,
+  isStudentMode = false,
+  onCloseAssessment,
 }) {
   const printableRef = useRef(null);
 
@@ -157,14 +160,25 @@ export function QuizResults({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={onRetake}
-              className="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-card transition flex items-center gap-1.5 shadow-sm"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Create New Quiz</span>
-            </button>
+            {isStudentMode ? (
+              <button
+                type="button"
+                onClick={onCloseAssessment || (() => { try { window.close(); } catch {} })}
+                className="px-3.5 py-1.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-card transition flex items-center gap-1.5 shadow-sm"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Close Assessment</span>
+              </button>
+            ) : onRetake ? (
+              <button
+                type="button"
+                onClick={onRetake}
+                className="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-card transition flex items-center gap-1.5 shadow-sm"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Create New Quiz</span>
+              </button>
+            ) : null}
           </div>
         </div>
 

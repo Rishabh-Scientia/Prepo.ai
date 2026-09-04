@@ -12,10 +12,11 @@ import {
   Sparkles, 
   PlusCircle, 
   ChevronDown,
-  CreditCard
+  CreditCard,
+  Clock
 } from 'lucide-react';
 
-export function Navbar({ onNavigate, currentPage }) {
+export function Navbar({ onNavigate, currentPage, hasActiveQuiz = false, onResumeQuiz }) {
   const { 
     user, 
     isLoggedIn, 
@@ -98,6 +99,20 @@ export function Navbar({ onNavigate, currentPage }) {
             <Sparkles className="w-4 h-4 text-primary-200" />
             <span>Create Test</span>
           </button>
+
+          {/* Resume Test if user has an ongoing active quiz */}
+          {hasActiveQuiz && (
+            <button
+              onClick={() => {
+                if (onResumeQuiz) onResumeQuiz();
+              }}
+              className="px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white flex items-center gap-1.5 shadow-sm ring-2 ring-amber-300 ring-offset-1 animate-pulse transition-all active:scale-95"
+              title="You have a test in progress! Click to return."
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Resume Test</span>
+            </button>
+          )}
 
           {isLoggedIn ? (
             <>
@@ -264,6 +279,19 @@ export function Navbar({ onNavigate, currentPage }) {
             <Sparkles className={`w-4 h-4 ${currentPage === 'config' ? 'text-primary-600' : 'text-primary-500'}`} />
             <span>Create Test</span>
           </button>
+
+          {hasActiveQuiz && (
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                if (onResumeQuiz) onResumeQuiz();
+              }}
+              className="w-full text-left px-3 py-2.5 text-sm font-bold bg-amber-50 text-amber-900 rounded-lg flex items-center gap-2.5 border border-amber-200 animate-pulse"
+            >
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span>Resume Active Test</span>
+            </button>
+          )}
 
           {isLoggedIn ? (
             <>

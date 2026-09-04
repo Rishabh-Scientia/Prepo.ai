@@ -28,14 +28,71 @@ export function App() {
   const { isLoggedIn, openSignIn, openCreditLimitModal, fetchCredits } = useAuth();
 
   // Navigation State: 'home' | 'config' | 'attempt' | 'results' | 'profile' | 'student'
-  const [currentPage, setCurrentPage] = useState('home');
-  const [profileTab, setProfileTab] = useState('history');
-  const [configMode, setConfigMode] = useState('topic'); // 'topic' | 'doc'
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('quiz_id')) return 'student';
+
+      const savedPage = sessionStorage.getItem('prepo_current_page');
+      if (savedPage === 'attempt') {
+        const savedQuiz = localStorage.getItem('prepo_active_quiz_data');
+        if (savedQuiz) {
+          try {
+            const parsed = JSON.parse(savedQuiz);
+            if (parsed && parsed.questions && parsed.questions.length > 0) {
+              return 'attempt';
+            }
+          } catch {}
+        }
+        return 'home';
+      }
+      if (savedPage === 'results') {
+        const savedResults = localStorage.getItem('prepo_evaluation_results');
+        if (savedResults) return 'results';
+        return 'home';
+      }
+      return savedPage || 'home';
+    } catch {
+      return 'home';
+    }
+  });
+
+  const [profileTab, setProfileTab] = useState(() => {
+    try {
+      return sessionStorage.getItem('prepo_profile_tab') || 'history';
+    } catch {
+      return 'history';
+    }
+  });
+
+  const [configMode, setConfigMode] = useState(() => {
+    try {
+      return sessionStorage.getItem('prepo_config_mode') || 'topic';
+    } catch {
+      return 'topic';
+    }
+  });
   const [prefilledSubject, setPrefilledSubject] = useState(null);
 
-  // Active Quiz State
-  const [activeQuizData, setActiveQuizData] = useState(null);
-  const [evaluationResults, setEvaluationResults] = useState(null);
+  // Active Quiz State (persisted so reload never loses spent credits / generated questions)
+  const [activeQuizData, setActiveQuizData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('prepo_active_quiz_data');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [evaluationResults, setEvaluationResults] = useState(() => {
+    try {
+      const saved = localStorage.getItem('prepo_evaluation_results');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMeta, setGeneratingMeta] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -55,6 +112,60 @@ export function App() {
     setToast({ message, type });
   };
 
+  // Sync state to storage to prevent loss on refresh
+  useEffect(() => {
+    try {
+      if (currentPage !== 'student') {
+        sessionStorage.setItem('prepo_current_page', currentPage);
+      }
+    } catch {}
+  }, [currentPage]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('prepo_profile_tab', profileTab);
+    } catch {}
+  }, [profileTab]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('prepo_config_mode', configMode);
+    } catch {}
+  }, [configMode]);
+
+  useEffect(() => {
+    try {
+      if (activeQuizData) {
+        localStorage.setItem('prepo_active_quiz_data', JSON.stringify(activeQuizData));
+      } else {
+        localStorage.removeItem('prepo_active_quiz_data');
+      }
+    } catch {}
+  }, [activeQuizData]);
+
+  useEffect(() => {
+    try {
+      if (evaluationResults) {
+        localStorage.setItem('prepo_evaluation_results', JSON.stringify(evaluationResults));
+      } else {
+        localStorage.removeItem('prepo_evaluation_results');
+      }
+    } catch {}
+  }, [evaluationResults]);
+
+  // Protect against accidental browser reload / close during active test attempt
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (currentPage === 'attempt' && activeQuizData) {
+        e.preventDefault();
+        e.returnValue = 'You have a test in progress. Are you sure you want to leave or reload?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentPage, activeQuizData]);
+
   // Check URL query parameters for ?quiz_id=...
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -70,6 +181,14 @@ export function App() {
     if (['config', 'profile'].includes(page) && !isLoggedIn) {
       openSignIn();
       return;
+    }
+
+    // Protect active ongoing test from accidental exit
+    if (currentPage === 'attempt' && activeQuizData && page !== 'attempt') {
+      const confirmLeave = window.confirm(
+        'You have an active test in progress!\n\nAre you sure you want to navigate away? Your answers are saved, and you can resume anytime using "Resume Test" in the navbar.'
+      );
+      if (!confirmLeave) return;
     }
 
     if (page === 'profile') {
@@ -202,6 +321,12 @@ export function App() {
         timeElapsed,
       });
 
+      // Clear active ongoing quiz now that it has been evaluated
+      setActiveQuizData(null);
+      try {
+        localStorage.removeItem('prepo_active_quiz_data');
+      } catch {}
+
       setCurrentPage('results');
     } catch (err) {
       setErrorMessage(err.message || 'Could not evaluate answers.');
@@ -228,7 +353,12 @@ export function App() {
       
       {/* ── NAVBAR (Hidden in guest student test attempt) ── */}
       {currentPage !== 'student' && (
-        <Navbar onNavigate={handleNavigate} currentPage={currentPage} />
+        <Navbar 
+          onNavigate={handleNavigate} 
+          currentPage={currentPage} 
+          hasActiveQuiz={!!activeQuizData && currentPage !== 'attempt'}
+          onResumeQuiz={() => setCurrentPage('attempt')}
+        />
       )}
 
       {/* ── MAIN BODY CONTENT ── */}
@@ -326,7 +456,15 @@ export function App() {
         {currentPage === 'results' && evaluationResults && (
           <QuizResults
             resultsData={evaluationResults}
-            onRetake={() => setCurrentPage('config')}
+            onRetake={() => {
+              setActiveQuizData(null);
+              setEvaluationResults(null);
+              try {
+                localStorage.removeItem('prepo_active_quiz_data');
+                localStorage.removeItem('prepo_evaluation_results');
+              } catch {}
+              setCurrentPage('config');
+            }}
             onShareQuiz={isLoggedIn ? handleShareCurrentQuiz : null}
             onShowToast={showToast}
           />

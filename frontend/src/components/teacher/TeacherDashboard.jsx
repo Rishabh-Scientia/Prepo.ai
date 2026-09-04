@@ -251,11 +251,16 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setSelectedShareQuiz(quiz)}
-                      className="px-3 py-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
-                      title="Share Quiz Link & Controls"
+                      disabled={!isActive}
+                      onClick={() => isActive && setSelectedShareQuiz(quiz)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition flex items-center gap-1.5 shadow-xs ${
+                        isActive
+                          ? 'text-amber-800 bg-amber-50 hover:bg-amber-100 border-amber-200 cursor-pointer'
+                          : 'text-gray-400 bg-gray-100/80 border-gray-200 opacity-40 cursor-not-allowed pointer-events-none filter blur-[0.4px] grayscale'
+                      }`}
+                      title={isActive ? "Share Quiz Link & Controls" : "Test disabled — enable responses to share"}
                     >
-                      <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                      <Share2 className={`w-3.5 h-3.5 ${isActive ? 'text-amber-600' : 'text-gray-400'}`} />
                       <span>Share</span>
                     </button>
 

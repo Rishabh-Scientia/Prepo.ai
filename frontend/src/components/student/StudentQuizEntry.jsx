@@ -13,24 +13,68 @@ import {
   Clock, 
   Lock, 
   CheckCircle2, 
-  Home, 
+  X, 
   EyeOff 
 } from 'lucide-react';
 
 export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
   const [quizInfo, setQuizInfo] = useState(null);
-  const [studentName, setStudentName] = useState('');
+  const [studentName, setStudentName] = useState(() => {
+    try {
+      return sessionStorage.getItem(`prepo_student_name_${quizId}`) || '';
+    } catch {
+      return '';
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState('entry'); // 'entry' | 'attempt' | 'results' | 'results_hidden'
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`prepo_student_step_${quizId}`);
+      if (saved === 'attempt') return 'attempt';
+      return 'entry';
+    } catch {
+      return 'entry';
+    }
+  }); // 'entry' | 'attempt' | 'results' | 'results_hidden'
   const [resultsData, setResultsData] = useState(null);
+  const [isClosedWindow, setIsClosedWindow] = useState(false);
 
   useEffect(() => {
     if (quizId) {
       loadQuizDetails();
     }
   }, [quizId]);
+
+  useEffect(() => {
+    try {
+      if (quizId && studentName) {
+        sessionStorage.setItem(`prepo_student_name_${quizId}`, studentName);
+      }
+    } catch {}
+  }, [quizId, studentName]);
+
+  useEffect(() => {
+    try {
+      if (quizId) {
+        sessionStorage.setItem(`prepo_student_step_${quizId}`, step);
+      }
+    } catch {}
+  }, [quizId, step]);
+
+  // Protect student against accidental refresh during ongoing assessment
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (step === 'attempt') {
+        e.preventDefault();
+        e.returnValue = 'You have a test in progress. Are you sure you want to reload or leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [step]);
 
   const loadQuizDetails = async () => {
     try {
@@ -43,6 +87,13 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseAssessment = () => {
+    try {
+      window.close();
+    } catch {}
+    setIsClosedWindow(true);
   };
 
   const handleStartTest = (e) => {
@@ -59,6 +110,11 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     try {
       setSubmitting(true);
       const res = await api.submitSharedQuiz(quizId, studentName.trim(), answers);
+
+      // Clean up stored attempt state
+      try {
+        sessionStorage.removeItem(`prepo_student_step_${quizId}`);
+      } catch {}
 
       if (res && res.score_hidden) {
         setResultsData({
@@ -98,6 +154,21 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     return `${mins}m ${secs}s`;
   };
 
+  // Peaceful Closed Tab screen
+  if (isClosedWindow) {
+    return (
+      <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-2xl border border-surface-200 text-center shadow-elevated space-y-4 animate-scaleUp">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
+          <CheckCircle2 className="w-7 h-7" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900">Assessment Complete</h3>
+        <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+          Your test responses have been successfully recorded. You can now close this browser window or tab.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="py-24 text-center text-gray-500 flex flex-col items-center justify-center gap-3 animate-fadeIn">
@@ -118,10 +189,11 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
         <p className="text-xs text-gray-600">{error}</p>
         <button
           type="button"
-          onClick={onExitToHome}
-          className="px-4 py-2 bg-primary-600 text-white text-xs font-bold rounded-card hover:bg-primary-700 transition"
+          onClick={handleCloseAssessment}
+          className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-card hover:bg-black transition flex items-center gap-1.5 mx-auto"
         >
-          Go to Prepo.ai Homepage
+          <X className="w-4 h-4" />
+          <span>Close Window</span>
         </button>
       </div>
     );
@@ -130,7 +202,17 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
   // Instructor Closed / Disabled Assessment
   if (quizInfo && quizInfo.is_active === false) {
     return (
-      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-card border border-amber-200 text-center shadow-elevated space-y-5 animate-scaleUp">
+      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-card border border-amber-200 text-center shadow-elevated space-y-5 animate-scaleUp relative">
+        <button
+          type="button"
+          onClick={handleCloseAssessment}
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-surface-100 transition"
+          title="Close Assessment"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
           <Lock className="w-7 h-7" />
         </div>
@@ -165,11 +247,11 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
 
         <button
           type="button"
-          onClick={onExitToHome}
+          onClick={handleCloseAssessment}
           className="w-full py-2.5 px-4 bg-surface-100 hover:bg-surface-200 text-gray-800 font-bold text-xs rounded-xl border border-surface-300 transition flex items-center justify-center gap-2 shadow-xs"
         >
-          <Home className="w-4 h-4" />
-          <span>Return to Prepo.ai Homepage</span>
+          <X className="w-4 h-4 text-gray-600" />
+          <span>Close Assessment Window</span>
         </button>
       </div>
     );
@@ -190,7 +272,7 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
           },
         }}
         onSubmit={handleStudentSubmit}
-        onExit={onExitToHome}
+        onExit={handleCloseAssessment}
         isEvaluating={submitting}
       />
     );
@@ -201,7 +283,8 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     return (
       <QuizResults
         resultsData={resultsData}
-        onRetake={onExitToHome}
+        isStudentMode={true}
+        onCloseAssessment={handleCloseAssessment}
         onShowToast={onShowToast}
       />
     );
@@ -210,7 +293,17 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
   // Private / Hidden Scorecard Confirmation Screen
   if (step === 'results_hidden' && resultsData) {
     return (
-      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-card border border-surface-200 shadow-elevated text-center space-y-6 animate-scaleUp">
+      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-card border border-surface-200 shadow-elevated text-center space-y-6 animate-scaleUp relative">
+        <button
+          type="button"
+          onClick={handleCloseAssessment}
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-surface-100 transition"
+          title="Close Assessment"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
           <CheckCircle2 className="w-8 h-8" />
         </div>
@@ -256,11 +349,11 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
 
         <button
           type="button"
-          onClick={onExitToHome}
-          className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+          onClick={handleCloseAssessment}
+          className="w-full py-2.5 px-4 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
         >
-          <Home className="w-4 h-4" />
-          <span>Return to Homepage</span>
+          <X className="w-4 h-4" />
+          <span>Close Assessment Window</span>
         </button>
       </div>
     );

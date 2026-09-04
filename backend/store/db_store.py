@@ -519,7 +519,7 @@ def get_teacher_shared_quizzes(teacher_id: str) -> List[Dict[str, Any]]:
 
     params = urllib.parse.urlencode({
         "created_by": f"eq.{teacher_id}",
-        "select": "id,subject,chapter,class_level,difficulty,language,created_at,questions,student_responses(id)",
+        "select": "id,subject,chapter,class_level,difficulty,language,created_at,is_active,time_limit_minutes,show_results,questions,student_responses(id)",
         "order": "created_at.desc",
     })
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{params}"
@@ -533,31 +533,56 @@ def get_teacher_shared_quizzes(teacher_id: str) -> List[Dict[str, Any]]:
         with urllib.request.urlopen(req) as response:
             res_body = response.read().decode("utf-8")
             quizzes = json.loads(res_body)
-            for q in quizzes:
-                responses = q.get("student_responses", [])
-                q["submission_count"] = len(responses) if isinstance(responses, list) else 0
-                q.pop("student_responses", None)
-
-                # Extract settings
-                raw_q = q.get("questions")
-                if isinstance(raw_q, str):
-                    try:
-                        raw_q = json.loads(raw_q)
-                    except Exception:
-                        raw_q = []
-
-                embedded_settings = {}
-                if isinstance(raw_q, list) and len(raw_q) > 0 and isinstance(raw_q[0], dict):
-                    embedded_settings = raw_q[0].get("_quiz_settings", {})
-
-                q["is_active"] = q.get("is_active") if q.get("is_active") is not None else embedded_settings.get("is_active", True)
-                q["time_limit_minutes"] = q.get("time_limit_minutes") if q.get("time_limit_minutes") is not None else embedded_settings.get("time_limit_minutes", None)
-                q["show_results"] = q.get("show_results") if q.get("show_results") is not None else embedded_settings.get("show_results", True)
-                q.pop("questions", None)
-
-            return quizzes
+    except urllib.error.HTTPError as he:
+        if he.code == 400:
+            # Fallback if columns not present
+            fallback_params = urllib.parse.urlencode({
+                "created_by": f"eq.{teacher_id}",
+                "select": "id,subject,chapter,class_level,difficulty,language,created_at,questions,student_responses(id)",
+                "order": "created_at.desc",
+            })
+            fallback_endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/shared_quizzes?{fallback_params}"
+            fallback_req = urllib.request.Request(
+                fallback_endpoint,
+                headers=_get_headers(),
+                method="GET",
+            )
+            with urllib.request.urlopen(fallback_req) as response:
+                res_body = response.read().decode("utf-8")
+                quizzes = json.loads(res_body)
+        else:
+            print(f"ERROR fetching teacher shared quizzes: {he}")
+            return []
     except Exception as e:
         print(f"ERROR fetching teacher shared quizzes: {e}")
+        return []
+
+    try:
+        for q in quizzes:
+            responses = q.get("student_responses", [])
+            q["submission_count"] = len(responses) if isinstance(responses, list) else 0
+            q.pop("student_responses", None)
+
+            # Extract settings
+            raw_q = q.get("questions")
+            if isinstance(raw_q, str):
+                try:
+                    raw_q = json.loads(raw_q)
+                except Exception:
+                    raw_q = []
+
+            embedded_settings = {}
+            if isinstance(raw_q, list) and len(raw_q) > 0 and isinstance(raw_q[0], dict):
+                embedded_settings = raw_q[0].get("_quiz_settings", {})
+
+            q["is_active"] = q.get("is_active") if q.get("is_active") is not None else embedded_settings.get("is_active", True)
+            q["time_limit_minutes"] = q.get("time_limit_minutes") if q.get("time_limit_minutes") is not None else embedded_settings.get("time_limit_minutes", None)
+            q["show_results"] = q.get("show_results") if q.get("show_results") is not None else embedded_settings.get("show_results", True)
+            q.pop("questions", None)
+
+        return quizzes
+    except Exception as e:
+        print(f"ERROR processing teacher shared quizzes: {e}")
         return []
 
 
