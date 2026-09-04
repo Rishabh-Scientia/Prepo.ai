@@ -6,7 +6,6 @@ import ConfirmModal from '../common/ConfirmModal';
 import { 
   Share2, 
   Trophy, 
-  Copy, 
   Trash2, 
   Calendar, 
   HelpCircle, 
@@ -47,16 +46,6 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   useEffect(() => {
     loadTeacherQuizzes();
   }, []);
-
-  const handleCopyLink = async (quizId) => {
-    const url = `${window.location.origin}/?quiz_id=${quizId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      if (onShowToast) onShowToast('Student quiz link copied!', 'success');
-    } catch {
-      setSelectedShareQuizId(quizId);
-    }
-  };
 
   const handleDeleteConfirm = async () => {
     if (!quizToDelete) return;
@@ -177,47 +166,37 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-5 pt-3 border-t border-surface-100 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyLink(quiz.id)}
-                      className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-surface-50 hover:bg-surface-100 border border-surface-300 rounded-card transition flex items-center gap-1"
-                      title="Copy Student Link"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-gray-500" />
-                      <span>Link</span>
-                    </button>
-
+                <div className="mt-5 pt-3 border-t border-surface-100 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedShareQuizId(quiz.id)}
-                      className="px-2.5 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-card transition flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
+                      title="Share Quiz Link & Code"
                     >
-                      <Share2 className="w-3.5 h-3.5" />
+                      <Share2 className="w-3.5 h-3.5 text-amber-600" />
                       <span>Share</span>
                     </button>
-                  </div>
 
-                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setSelectedLeaderboardQuiz(quiz)}
-                      className="px-3 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-card transition flex items-center gap-1.5 shadow-sm"
+                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition flex items-center gap-1.5 shadow-sm hover:shadow-md"
+                      title="View Student Leaderboard"
                     >
                       <Trophy className="w-3.5 h-3.5 text-amber-300" />
                       <span>Leaderboard</span>
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setQuizToDelete(quiz)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 rounded transition hover:bg-red-50"
-                      title="Delete Shared Quiz"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setQuizToDelete(quiz)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
+                    title="Delete Shared Quiz"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );
