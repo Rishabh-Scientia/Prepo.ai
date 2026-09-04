@@ -81,50 +81,20 @@ export function UserProfile({
         </div>
       </div>
 
-      {/* ── TABS NAV (Only show multi-tabs if in Teacher Mode) ── */}
+      {/* ── MODE SPECIFIC CONTENT ── */}
       {userMode === 'teacher' ? (
-        <div className="flex border-b border-surface-200 mb-8 gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('teacher')}
-            className={`pb-3 px-5 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${
-              activeTab === 'teacher'
-                ? 'border-indigo-600 text-indigo-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <Share2 className="w-4 h-4 text-indigo-600" />
-            <span>Classroom Assessments</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('history')}
-            className={`pb-3 px-5 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${
-              activeTab === 'history'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            <span>Personal Practice</span>
-          </button>
-        </div>
-      ) : (
-        <div className="mb-6 pb-2 border-b border-surface-200 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-primary-700 font-extrabold text-sm sm:text-base">
-            <History className="w-4 h-4" />
-            <span>My Practice Tests & Performance</span>
-          </div>
-          <span className="text-xs text-gray-400 font-medium">Student Learning Dashboard</span>
-        </div>
-      )}
-
-      {/* ── TAB CONTENT ── */}
-      {userMode === 'student' || activeTab === 'history' ? (
-        <AttemptHistory onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
-      ) : (
         <TeacherDashboard onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
+      ) : (
+        <div>
+          <div className="mb-6 pb-2 border-b border-surface-200 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary-700 font-extrabold text-sm sm:text-base">
+              <History className="w-4 h-4" />
+              <span>My Practice Tests & Performance</span>
+            </div>
+            <span className="text-xs text-gray-400 font-medium">Student Learning Dashboard</span>
+          </div>
+          <AttemptHistory onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
+        </div>
       )}
     </div>
   );

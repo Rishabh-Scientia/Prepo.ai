@@ -302,16 +302,6 @@ export function Navbar({
                             <span className="font-semibold">Classroom Assessments</span>
                             <span className="ml-auto text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Active</span>
                           </button>
-
-                          <button
-                            onClick={() => handleNavClick('profile', 'history')}
-                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
-                              currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
-                            }`}
-                          >
-                            <History className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold">Personal Practice</span>
-                          </button>
                         </>
                       )}
 
@@ -323,7 +313,7 @@ export function Navbar({
                         className="w-full px-4 py-2.5 text-left text-xs text-amber-800 hover:bg-amber-50 flex items-center gap-2.5 transition-colors"
                       >
                         <CreditCard className="w-4 h-4 text-amber-500" />
-                        <span className="font-semibold">Buy Credits</span>
+                        <span className="font-semibold">Pricing</span>
                         <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{credits}</span>
                       </button>
                     </div>
@@ -378,11 +368,11 @@ export function Navbar({
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (Only account, mode switch, and pricing — navigation is on MobileBottomNav) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-surface-200 bg-white px-4 py-3 space-y-2 animate-fadeIn shadow-lg">
+        <div className="md:hidden border-t border-surface-200 bg-white px-4 py-3.5 space-y-3 animate-fadeIn shadow-xl">
           {/* Dual Mode Switcher Pill (Mobile) */}
-          <div className="bg-surface-100 p-1 rounded-xl border border-surface-200 flex items-center mb-2">
+          <div className="bg-surface-100 p-1 rounded-xl border border-surface-200 flex items-center">
             <button
               type="button"
               onClick={() => handleModeChange('student')}
@@ -400,7 +390,7 @@ export function Navbar({
               onClick={() => handleModeChange('teacher')}
               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                 userMode === 'teacher'
-                  ? 'bg-gradient-to-r from-primary-600 to-indigo-700 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-indigo-600 to-primary-700 text-white shadow-xs'
                   : 'text-gray-500 hover:text-gray-800'
               }`}
             >
@@ -410,65 +400,39 @@ export function Navbar({
           </div>
 
           {isLoggedIn ? (
-            <div className="pb-3 mb-2 border-b border-surface-200">
-              <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs">
+            <div className="p-3 bg-surface-50 rounded-xl border border-surface-200/80 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
                   {userInitial}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-gray-900 truncate">{displayName}</p>
                   <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
                 </div>
               </div>
+              <div className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-800 shrink-0">
+                {credits} Credits
+              </div>
             </div>
           ) : null}
 
-          {/* Contextual links for Mobile */}
-          {userMode === 'student' ? (
-            <>
-              <button
-                onClick={() => handleNavClick('home')}
-                className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'home' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <Home className="w-4 h-4 text-primary-600" />
-                <span>Home</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick('config')}
-                className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'config' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <Sparkles className="w-4 h-4 text-primary-600" />
-                <span>Practice Test</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => handleNavClick('profile', 'teacher')}
-                className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'profile' && profileTab === 'teacher' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <BookOpen className="w-4 h-4 text-indigo-600" />
-                <span>Classroom Dashboard</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick('config')}
-                className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'config' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span>Create Class Test</span>
-              </button>
-            </>
-          )}
+          {/* Pricing Option */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              openBuyCreditsModal();
+            }}
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:text-amber-800 bg-surface-50 hover:bg-amber-50 rounded-xl flex items-center justify-between border border-surface-200 transition-colors"
+          >
+            <span className="flex items-center gap-2.5">
+              <CreditCard className="w-4 h-4 text-amber-500" />
+              <span>Pricing</span>
+            </span>
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+              {credits} Credits
+            </span>
+          </button>
 
           {hasActiveQuiz && (
             <button
@@ -476,67 +440,35 @@ export function Navbar({
                 setIsMobileMenuOpen(false);
                 if (onResumeQuiz) onResumeQuiz();
               }}
-              className="w-full text-left px-3 py-2.5 text-xs font-bold bg-amber-50 text-amber-900 rounded-lg flex items-center gap-2.5 border border-amber-200 animate-pulse"
+              className="w-full text-left px-3 py-2.5 text-xs font-bold bg-amber-50 text-amber-900 rounded-xl flex items-center gap-2.5 border border-amber-200 animate-pulse"
             >
               <Clock className="w-4 h-4 text-amber-600" />
               <span>Resume Active Test</span>
             </button>
           )}
 
+          {/* Sign Out / Sign In */}
           {isLoggedIn ? (
-            <>
-              <button
-                onClick={() => handleNavClick('profile', 'history')}
-                className={`w-full text-left px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50 text-primary-700 font-bold' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <History className="w-4 h-4 text-gray-400" />
-                <span>Attempt History</span>
-              </button>
-
-              <button
-                onClick={() => handleNavClick('profile', 'teacher')}
-                className={`w-full text-left px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2.5 transition-colors ${
-                  currentPage === 'profile' && profileTab === 'teacher' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 hover:bg-surface-50'
-                }`}
-              >
-                <Share2 className="w-4 h-4 text-indigo-500" />
-                <span>Teacher Shared Tests</span>
-              </button>
-
+            <div className="pt-2 border-t border-surface-100">
               <button
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  openBuyCreditsModal();
+                  signOut();
+                  handleNavClick('home');
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-bold text-amber-700 bg-amber-50/70 rounded-lg flex items-center gap-2.5 border border-amber-100"
+                className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-colors"
               >
-                <Coins className="w-4 h-4 text-amber-500" />
-                <span>Buy Credits ({credits} available)</span>
+                <LogOut className="w-4 h-4 text-red-400" />
+                <span>Sign Out</span>
               </button>
-
-              <div className="pt-2 border-t border-surface-200 mt-2">
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    signOut();
-                    handleNavClick('home');
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-colors"
-                >
-                  <LogOut className="w-4 h-4 text-red-400" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            </>
+            </div>
           ) : (
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);
                 openSignIn();
               }}
-              className="w-full mt-2 py-2.5 text-center text-xs font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-lg transition shadow-xs"
+              className="w-full py-2.5 text-center text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition shadow-xs"
             >
               Sign In / Sign Up
             </button>

@@ -49,7 +49,7 @@ export function MobileBottomNav({
           </button>
         )}
 
-        {/* TAB 2: History (Student) or Personal Practice (Teacher) */}
+        {/* TAB 2: My Tests (Student) or Assessments (Teacher) */}
         {isStudent ? (
           <button
             type="button"
@@ -64,13 +64,13 @@ export function MobileBottomNav({
         ) : (
           <button
             type="button"
-            onClick={() => onNavigate('profile', 'history')}
+            onClick={() => onNavigate('profile', 'teacher')}
             className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentPage === 'profile' && profileTab === 'history' ? 'text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-800'
+              currentPage === 'profile' && profileTab === 'teacher' ? 'text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-800'
             }`}
           >
-            <History className={`w-5 h-5 ${currentPage === 'profile' && profileTab === 'history' ? 'stroke-[2.5]' : 'stroke-2'}`} />
-            <span className="text-[10px] mt-0.5 font-medium">Practice</span>
+            <BookOpen className={`w-5 h-5 ${currentPage === 'profile' && profileTab === 'teacher' ? 'stroke-[2.5]' : 'stroke-2'}`} />
+            <span className="text-[10px] mt-0.5 font-medium">Assessments</span>
           </button>
         )}
 
@@ -93,7 +93,7 @@ export function MobileBottomNav({
           </span>
         </div>
 
-        {/* TAB 4: Credits Top Up */}
+        {/* TAB 4: Pricing & Credits Top Up */}
         <button
           type="button"
           onClick={onOpenCredits}
@@ -105,7 +105,7 @@ export function MobileBottomNav({
               {credits}
             </span>
           </div>
-          <span className="text-[10px] mt-0.5 font-medium text-amber-800">Credits</span>
+          <span className="text-[10px] mt-0.5 font-medium text-amber-800">Pricing</span>
         </button>
 
         {/* TAB 5: Mode Switcher */}
