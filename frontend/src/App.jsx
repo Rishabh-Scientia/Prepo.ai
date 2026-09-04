@@ -351,8 +351,8 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-surface-100 text-gray-800">
       
-      {/* ── NAVBAR (Hidden in guest student test attempt) ── */}
-      {currentPage !== 'student' && (
+      {/* ── NAVBAR (Hidden in active quiz attempt & guest student test) ── */}
+      {currentPage !== 'student' && currentPage !== 'attempt' && (
         <Navbar 
           onNavigate={handleNavigate} 
           currentPage={currentPage} 

@@ -115,141 +115,146 @@ export function QuizAttempt({
   const unansweredCount = questions.length - answeredCount;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 animate-fadeIn pb-24">
+    <div className="min-h-screen flex flex-col bg-surface-100 pb-24">
       
-      {/* ── STICKY TOP BAR ── */}
-      <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-sm border-b border-surface-200 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 shadow-subtle mb-6 flex items-center justify-between gap-4">
-        <div className="min-w-0 flex items-center gap-2">
-          {onExit && (
-            <button
-              type="button"
-              onClick={() => {
-                const confirmExit = window.confirm(
-                  'Are you sure you want to pause or exit this test?\n\nYour selected answers are safely saved, and you can resume anytime.'
-                );
-                if (confirmExit) onExit();
-              }}
-              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-surface-100 transition shrink-0"
-              title="Pause and Exit Test"
-              aria-label="Exit Test"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-          )}
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200 truncate">
-              {quizData.config?.subject || 'Practice Test'}
-            </span>
-            <span className="text-xs text-gray-500 truncate hidden sm:inline">
-              {quizData.config?.chapter || quizData.config?.class_level}
-            </span>
-          </div>
-        </div>
-
-        {/* Timer & Submit */}
-        <div className="flex items-center gap-3">
-          {timeLimitMinutes ? (
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-card text-xs font-bold border transition ${
-              remainingSeconds <= 60
-                ? 'bg-red-50 border-red-300 text-red-700 animate-pulse ring-1 ring-red-400'
-                : remainingSeconds <= 300
-                ? 'bg-amber-50 border-amber-300 text-amber-800'
-                : 'bg-surface-100 border-surface-200 text-gray-700'
-            }`}>
-              <Clock className={`w-3.5 h-3.5 ${
-                remainingSeconds <= 60 ? 'text-red-600' : remainingSeconds <= 300 ? 'text-amber-600' : 'text-primary-600'
-              }`} />
-              <span className="font-mono">{formatTime(remainingSeconds)}</span>
-              <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">left</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-100 border border-surface-200 rounded-card text-xs font-semibold text-gray-700">
-              <Clock className="w-3.5 h-3.5 text-primary-600 animate-pulse" />
-              <span>{formatTime(secondsElapsed)}</span>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowSubmitModal(true)}
-            disabled={isEvaluating}
-            className="px-4 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-card transition shadow-sm flex items-center gap-1.5"
-          >
-            {isEvaluating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Grading...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Submit Test</span>
-              </>
+      {/* ── TOP-LEVEL AFFIXED NAVBAR (Sticky Top-0 Full Width) ── */}
+      <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-surface-200/90 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="min-w-0 flex items-center gap-2.5">
+            {onExit && (
+              <button
+                type="button"
+                onClick={() => {
+                  const confirmExit = window.confirm(
+                    'Are you sure you want to pause or exit this test?\n\nYour selected answers are safely saved, and you can resume anytime.'
+                  );
+                  if (confirmExit) onExit();
+                }}
+                className="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-surface-100 transition shrink-0 active:scale-95"
+                title="Pause and Exit Test"
+                aria-label="Exit Test"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
             )}
-          </button>
-        </div>
-      </div>
-
-      {/* Timeout Warning Banner (< 1 min) */}
-      {timeLimitMinutes && remainingSeconds !== null && remainingSeconds <= 60 && remainingSeconds > 0 && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center justify-between gap-2 animate-pulse shadow-sm">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>Less than 1 minute remaining! Assessment will automatically submit when time reaches 00:00.</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-200 truncate">
+                {quizData.config?.subject || 'Practice Test'}
+              </span>
+              <span className="text-xs text-gray-500 font-medium truncate hidden sm:inline">
+                {quizData.config?.chapter || quizData.config?.class_level}
+              </span>
+            </div>
           </div>
-          <span className="font-mono font-extrabold text-sm">{remainingSeconds}s</span>
-        </div>
-      )}
 
-      {/* ── MAIN CONTENT GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        
-        {/* Questions List */}
-        <div className="lg:col-span-3 space-y-6">
-          {questions.map((question, idx) => (
-            <QuestionCard
-              key={question.id || idx}
-              question={question}
-              index={idx}
-              selectedOption={selectedAnswers[question.id]}
-              onSelectOption={handleSelectOption}
-            />
-          ))}
+          {/* Timer & Submit */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {timeLimitMinutes ? (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                remainingSeconds <= 60
+                  ? 'bg-red-50 border-red-300 text-red-700 animate-pulse ring-1 ring-red-400'
+                  : remainingSeconds <= 300
+                  ? 'bg-amber-50 border-amber-300 text-amber-800'
+                  : 'bg-surface-100 border-surface-200 text-gray-700'
+              }`}>
+                <Clock className={`w-4 h-4 ${
+                  remainingSeconds <= 60 ? 'text-red-600' : remainingSeconds <= 300 ? 'text-amber-600' : 'text-primary-600'
+                }`} />
+                <span className="font-mono text-sm">{formatTime(remainingSeconds)}</span>
+                <span className="text-[10px] uppercase font-bold text-gray-500 hidden sm:inline">left</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-100 border border-surface-200 rounded-xl text-xs font-semibold text-gray-700">
+                <Clock className="w-4 h-4 text-primary-600 animate-pulse" />
+                <span className="font-mono text-sm">{formatTime(secondsElapsed)}</span>
+              </div>
+            )}
 
-          {/* Bottom Submit Trigger */}
-          <div className="p-6 bg-white rounded-card border border-surface-200 text-center shadow-subtle">
-            <h4 className="text-sm font-bold text-gray-900">Finished answering all questions?</h4>
-            <p className="text-xs text-gray-500 mt-1">
-              You have answered {answeredCount} out of {questions.length} questions.
-            </p>
             <button
               type="button"
               onClick={() => setShowSubmitModal(true)}
               disabled={isEvaluating}
-              className="mt-4 px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-card transition shadow-sm inline-flex items-center gap-2"
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm hover:shadow-md active:scale-95 flex items-center gap-1.5"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Submit Assessment</span>
+              {isEvaluating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Grading...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Submit Test</span>
+                </>
+              )}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Sidebar Palette */}
-        <div className="hidden lg:block sticky top-32 space-y-4">
-          <QuestionPalette
-            questions={questions}
-            selectedAnswers={selectedAnswers}
-            onSelectQuestion={handleScrollToQuestion}
-          />
-
-          <div className="bg-surface-50 rounded-card border border-surface-200 p-4 text-xs text-gray-600 space-y-2">
+      {/* ── MAIN QUIZ CONTAINER ── */}
+      <div className="max-w-5xl w-full mx-auto px-4 py-6 animate-fadeIn flex-1">
+        {/* Timeout Warning Banner (< 1 min) */}
+        {timeLimitMinutes && remainingSeconds !== null && remainingSeconds <= 60 && remainingSeconds > 0 && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center justify-between gap-2 animate-pulse shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded bg-primary-600"></span>
-              <span>Answered ({answeredCount})</span>
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>Less than 1 minute remaining! Assessment will automatically submit when time reaches 00:00.</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded bg-surface-100 border border-surface-300"></span>
-              <span>Unanswered ({unansweredCount})</span>
+            <span className="font-mono font-extrabold text-sm">{remainingSeconds}s</span>
+          </div>
+        )}
+
+        {/* ── MAIN CONTENT GRID ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          
+          {/* Questions List */}
+          <div className="lg:col-span-3 space-y-6">
+            {questions.map((question, idx) => (
+              <QuestionCard
+                key={question.id || idx}
+                question={question}
+                index={idx}
+                selectedOption={selectedAnswers[question.id]}
+                onSelectOption={handleSelectOption}
+              />
+            ))}
+
+            {/* Bottom Submit Trigger */}
+            <div className="p-6 bg-white rounded-card border border-surface-200 text-center shadow-subtle">
+              <h4 className="text-sm font-bold text-gray-900">Finished answering all questions?</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                You have answered {answeredCount} out of {questions.length} questions.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(true)}
+                disabled={isEvaluating}
+                className="mt-4 px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-card transition shadow-sm inline-flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Submit Assessment</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sidebar Palette */}
+          <div className="hidden lg:block sticky top-20 space-y-4">
+            <QuestionPalette
+              questions={questions}
+              selectedAnswers={selectedAnswers}
+              onSelectQuestion={handleScrollToQuestion}
+            />
+
+            <div className="bg-surface-50 rounded-card border border-surface-200 p-4 text-xs text-gray-600 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded bg-primary-600"></span>
+                <span>Answered ({answeredCount})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded bg-surface-100 border border-surface-300"></span>
+                <span>Unanswered ({unansweredCount})</span>
+              </div>
             </div>
           </div>
         </div>

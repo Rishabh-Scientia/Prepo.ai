@@ -93,7 +93,9 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     try {
       window.close();
     } catch {}
-    setIsClosedWindow(true);
+    if (step === 'results' || step === 'results_hidden') {
+      setIsClosedWindow(true);
+    }
   };
 
   const handleStartTest = (e) => {
@@ -154,8 +156,8 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
     return `${mins}m ${secs}s`;
   };
 
-  // Peaceful Closed Tab screen
-  if (isClosedWindow) {
+  // Peaceful Closed Tab screen - strictly for submitted tests
+  if (isClosedWindow && (step === 'results' || step === 'results_hidden')) {
     return (
       <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-2xl border border-surface-200 text-center shadow-elevated space-y-4 animate-scaleUp">
         <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
@@ -202,17 +204,7 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
   // Instructor Closed / Disabled Assessment
   if (quizInfo && quizInfo.is_active === false) {
     return (
-      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-card border border-amber-200 text-center shadow-elevated space-y-5 animate-scaleUp relative">
-        <button
-          type="button"
-          onClick={handleCloseAssessment}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-surface-100 transition"
-          title="Close Assessment"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
+      <div className="max-w-lg mx-auto my-16 p-8 bg-white rounded-2xl border border-amber-200 text-center shadow-elevated space-y-5 animate-scaleUp">
         <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
           <Lock className="w-7 h-7" />
         </div>
@@ -245,14 +237,9 @@ export function StudentQuizEntry({ quizId, onExitToHome, onShowToast }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCloseAssessment}
-          className="w-full py-2.5 px-4 bg-surface-100 hover:bg-surface-200 text-gray-800 font-bold text-xs rounded-xl border border-surface-300 transition flex items-center justify-center gap-2 shadow-xs"
-        >
-          <X className="w-4 h-4 text-gray-600" />
-          <span>Close Assessment Window</span>
-        </button>
+        <p className="pt-2 text-xs text-gray-400 font-medium">
+          You may now safely close this browser window or tab.
+        </p>
       </div>
     );
   }

@@ -185,7 +185,7 @@ export function ShareQuizModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900">Share Quiz & Assessment Controls</h3>
-              <p className="text-xs text-gray-500">Configure student timers, solutions visibility, and test access</p>
+              <p className="text-xs text-gray-500">Configure student timers and score visibility</p>
             </div>
           </div>
           <button
@@ -262,47 +262,7 @@ export function ShareQuizModal({
               ) : null}
             </div>
 
-            {/* 1. Accepting Responses Toggle */}
-            <div className="bg-white p-3.5 rounded-xl border border-surface-200 shadow-xs flex items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
-                  <Power className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                  <span>Accepting Responses</span>
-                  {isActive ? (
-                    <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold">Active</span>
-                  ) : (
-                    <span className="text-[10px] bg-gray-100 text-gray-600 border border-gray-200 px-1.5 py-0.2 rounded font-semibold">Closed</span>
-                  )}
-                </div>
-                <p className="text-[11px] text-gray-500 leading-tight">
-                  {isActive 
-                    ? 'Students can open link and submit test.' 
-                    : 'Link is closed. Students will see that submissions are disabled.'}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isActive}
-                onClick={() => {
-                  const next = !isActive;
-                  setIsActive(next);
-                  persistSettings({ isActive: next });
-                }}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isActive ? 'bg-emerald-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    isActive ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* 2. Timer Toggle */}
+            {/* 1. Timer Toggle */}
             <div className="bg-white p-3.5 rounded-xl border border-surface-200 shadow-xs space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="space-y-0.5">
