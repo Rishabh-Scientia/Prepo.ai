@@ -4,6 +4,7 @@ import { api } from './services/api';
 
 // Components
 import Navbar from './components/common/Navbar';
+import MobileBottomNav from './components/common/MobileBottomNav';
 import Footer from './components/common/Footer';
 import Toast from './components/common/Toast';
 import ErrorModal from './components/common/ErrorModal';
@@ -13,6 +14,7 @@ import SignUpModal from './components/auth/SignUpModal';
 import BuyCreditsModal from './components/billing/BuyCreditsModal';
 import CreditLimitModal from './components/billing/CreditLimitModal';
 import ShareQuizModal from './components/teacher/ShareQuizModal';
+import TeacherQuizSuccessModal from './components/teacher/TeacherQuizSuccessModal';
 
 import HeroSection from './components/home/HeroSection';
 import QuizGenerator from './components/quiz/QuizGenerator';
@@ -25,7 +27,14 @@ import StudentQuizEntry from './components/student/StudentQuizEntry';
 import { Sparkles, FileText, ArrowLeft, Layers } from 'lucide-react';
 
 export function App() {
-  const { isLoggedIn, openSignIn, openCreditLimitModal, fetchCredits } = useAuth();
+  const { 
+    isLoggedIn, 
+    openSignIn, 
+    openBuyCreditsModal, 
+    openCreditLimitModal, 
+    fetchCredits, 
+    credits 
+  } = useAuth();
 
   // Navigation State: 'home' | 'config' | 'attempt' | 'results' | 'profile' | 'student'
   const [currentPage, setCurrentPage] = useState(() => {
@@ -111,6 +120,9 @@ export function App() {
 
   // Teacher Shared Quiz Modal State
   const [sharedQuizIdForModal, setSharedQuizIdForModal] = useState(null);
+
+  // Teacher Quiz Created Success Modal State (Share vs Solve choice)
+  const [teacherSuccessQuiz, setTeacherSuccessQuiz] = useState(null);
 
   // Global Toast & Error Modal
   const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -272,7 +284,7 @@ export function App() {
       const data = await api.generateQuiz(config);
       await fetchCredits();
 
-      setActiveQuizData({
+      const quizPayload = {
         session_id: data.session_id,
         questions: data.questions,
         config: {
@@ -282,9 +294,17 @@ export function App() {
           difficulty: config.difficulty,
           num_questions: config.num_questions,
         },
-      });
+      };
 
-      setCurrentPage('attempt');
+      setActiveQuizData(quizPayload);
+
+      if (userMode === 'teacher') {
+        // In Teacher Mode: Pop open choices to Share or Solve
+        setTeacherSuccessQuiz(quizPayload);
+      } else {
+        // In Student Mode: Start test attempt directly
+        setCurrentPage('attempt');
+      }
     } catch (err) {
       if (err.isCreditLimit) {
         openCreditLimitModal();
@@ -315,7 +335,7 @@ export function App() {
       const data = await api.generateQuizFromDoc(formData);
       await fetchCredits();
 
-      setActiveQuizData({
+      const docPayload = {
         session_id: data.session_id,
         questions: data.questions,
         config: {
@@ -323,9 +343,15 @@ export function App() {
           chapter: 'Uploaded Document',
           class_level: 'Custom Document',
         },
-      });
+      };
 
-      setCurrentPage('attempt');
+      setActiveQuizData(docPayload);
+
+      if (userMode === 'teacher') {
+        setTeacherSuccessQuiz(docPayload);
+      } else {
+        setCurrentPage('attempt');
+      }
     } catch (err) {
       if (err.isCreditLimit) {
         openCreditLimitModal();
@@ -381,6 +407,30 @@ export function App() {
     }
   };
 
+  // Teacher Success Modal Handlers
+  const handleTeacherShareFromModal = async () => {
+    if (!teacherSuccessQuiz?.session_id) return;
+    try {
+      const res = await api.shareQuiz(teacherSuccessQuiz.session_id);
+      if (res && res.shared_quiz_id) {
+        setTeacherSuccessQuiz(null);
+        setSharedQuizIdForModal(res.shared_quiz_id);
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to generate share link.', 'error');
+    }
+  };
+
+  const handleTeacherSolveFromModal = () => {
+    setTeacherSuccessQuiz(null);
+    setCurrentPage('attempt');
+  };
+
+  const handleTeacherGoToDashboard = () => {
+    setTeacherSuccessQuiz(null);
+    handleNavigate('profile', 'teacher');
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-between bg-surface-100 text-gray-800">
       
@@ -398,7 +448,7 @@ export function App() {
       )}
 
       {/* ── MAIN BODY CONTENT ── */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         
         {/* 1. HOME PAGE */}
         {currentPage === 'home' && (
@@ -550,6 +600,18 @@ export function App() {
         />
       )}
 
+      {/* Teacher Quiz Created Choices Modal */}
+      {teacherSuccessQuiz && (
+        <TeacherQuizSuccessModal
+          isOpen={!!teacherSuccessQuiz}
+          onClose={() => setTeacherSuccessQuiz(null)}
+          quizData={teacherSuccessQuiz}
+          onShareQuiz={handleTeacherShareFromModal}
+          onSolveQuiz={handleTeacherSolveFromModal}
+          onGoToDashboard={handleTeacherGoToDashboard}
+        />
+      )}
+
       {/* Error Modal */}
       <ErrorModal
         isOpen={!!errorMessage}
@@ -576,6 +638,19 @@ export function App() {
         title={generatingMeta?.title || (configMode === 'doc' ? 'Extracting AI Quiz from Document' : 'Generating AI Practice Test')}
         subtitle={generatingMeta?.subtitle || 'Formulating high-yield exam questions with 4-part AI reasoning...'}
       />
+
+      {/* ── MOBILE BOTTOM NAVIGATION BAR (Native App Style as in Photo 3) ── */}
+      {currentPage !== 'student' && currentPage !== 'attempt' && (
+        <MobileBottomNav
+          currentPage={currentPage}
+          profileTab={profileTab}
+          userMode={userMode}
+          credits={credits}
+          onNavigate={handleNavigate}
+          onOpenCredits={openBuyCreditsModal}
+          onToggleMode={handleToggleUserMode}
+        />
+      )}
 
     </div>
   );

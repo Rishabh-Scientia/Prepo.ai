@@ -77,21 +77,16 @@ export function Navbar({
         <div className="flex items-center gap-3">
           <button 
             onClick={() => handleNavClick(userMode === 'teacher' ? 'profile' : 'home', 'teacher')}
-            className="flex items-center gap-2.5 focus:outline-none group text-left"
+            className="flex items-center gap-2 focus:outline-none group text-left"
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
-              <span className="text-white font-black text-lg">P</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
+              <span className="text-white font-black text-base">P</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-gray-900 tracking-tight">Prepo<span className="text-primary-600">.ai</span></span>
-              <span className="hidden lg:inline-block text-[9px] font-bold uppercase tracking-wider text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
-                {userMode === 'teacher' ? 'Classroom Suite' : 'AI Mock Tests'}
-              </span>
-            </div>
+            <span className="font-extrabold text-lg text-gray-900 tracking-tight">Prepo<span className="text-primary-600">.ai</span></span>
           </button>
 
           {/* Dual Mode Switcher Pill (Desktop) */}
-          <div className="hidden sm:flex items-center bg-surface-100/90 p-1 rounded-xl border border-surface-200 shadow-2xs ml-1">
+          <div className="hidden sm:flex items-center bg-surface-100/90 p-1 rounded-xl border border-surface-200/90 shadow-2xs ml-1">
             <button
               type="button"
               onClick={() => handleModeChange('student')}
@@ -100,7 +95,7 @@ export function Navbar({
                   ? 'bg-white text-primary-700 shadow-xs ring-1 ring-black/5'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
               }`}
-              title="Student Mode: Self practice, syllabus MCQs, and detailed 4-part AI explanations"
+              title="Student Mode: Syllabus practice, MCQs, and 4-part AI explanations"
             >
               <GraduationCap className="w-3.5 h-3.5" />
               <span>Student</span>
@@ -110,10 +105,10 @@ export function Navbar({
               onClick={() => handleModeChange('teacher')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 userMode === 'teacher'
-                  ? 'bg-gradient-to-r from-primary-600 to-indigo-700 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-indigo-600 to-primary-700 text-white shadow-xs'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
               }`}
-              title="Teacher Mode: Create classroom tests, track live student leaderboards, and share with 1 click"
+              title="Teacher Mode: Create classroom tests and track live student submissions"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Teacher</span>
@@ -129,7 +124,7 @@ export function Navbar({
               {/* Home */}
               <button
                 onClick={() => handleNavClick('home')}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
                   currentPage === 'home'
                     ? 'text-primary-700 bg-primary-50 font-extrabold'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
@@ -142,7 +137,7 @@ export function Navbar({
               {/* Student Practice Test CTA */}
               <button
                 onClick={() => handleNavClick('config')}
-                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
                   currentPage === 'config'
                     ? 'bg-primary-700 text-white ring-2 ring-primary-300'
                     : 'bg-primary-600 hover:bg-primary-700 text-white'
@@ -151,28 +146,13 @@ export function Navbar({
                 <Sparkles className="w-3.5 h-3.5 text-primary-200" />
                 <span>Practice Test</span>
               </button>
-
-              {/* Attempt History */}
-              {isLoggedIn && (
-                <button
-                  onClick={() => handleNavClick('profile', 'history')}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                    currentPage === 'profile' && profileTab === 'history'
-                      ? 'text-primary-700 bg-primary-50 font-extrabold'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5" />
-                  <span>My History</span>
-                </button>
-              )}
             </>
           ) : (
             <>
               {/* Teacher Dashboard */}
               <button
                 onClick={() => handleNavClick('profile', 'teacher')}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
                   currentPage === 'profile' && profileTab === 'teacher'
                     ? 'text-indigo-700 bg-indigo-50 font-extrabold'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
@@ -185,7 +165,7 @@ export function Navbar({
               {/* Create Class Test CTA */}
               <button
                 onClick={() => handleNavClick('config')}
-                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
                   currentPage === 'config'
                     ? 'bg-indigo-700 text-white ring-2 ring-indigo-300'
                     : 'bg-gradient-to-r from-indigo-600 to-primary-700 hover:from-indigo-700 hover:to-primary-800 text-white'
@@ -194,21 +174,6 @@ export function Navbar({
                 <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
                 <span>Create Class Test</span>
               </button>
-
-              {/* Past Attempts Tab */}
-              {isLoggedIn && (
-                <button
-                  onClick={() => handleNavClick('profile', 'history')}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                    currentPage === 'profile' && profileTab === 'history'
-                      ? 'text-primary-700 bg-primary-50 font-extrabold'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5" />
-                  <span>Personal Practice</span>
-                </button>
-              )}
             </>
           )}
 
@@ -218,7 +183,7 @@ export function Navbar({
               onClick={() => {
                 if (onResumeQuiz) onResumeQuiz();
               }}
-              className="px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white flex items-center gap-1.5 shadow-sm ring-2 ring-amber-300 ring-offset-1 animate-pulse transition-all active:scale-95"
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white flex items-center gap-1.5 shadow-sm ring-2 ring-amber-300 ring-offset-1 animate-pulse transition-all active:scale-95"
               title="You have a test in progress! Click to return."
             >
               <Clock className="w-3.5 h-3.5" />
@@ -231,7 +196,7 @@ export function Navbar({
               {/* Credits Badge */}
               <button
                 onClick={openBuyCreditsModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 hover:border-amber-300 rounded-lg text-xs font-bold text-amber-800 transition-all hover:shadow-xs group"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 hover:border-amber-300 rounded-lg text-xs font-bold text-amber-800 transition-all hover:shadow-xs group"
                 title="Click to buy more credits"
               >
                 <Coins className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-12 transition-transform" />
@@ -309,30 +274,46 @@ export function Navbar({
                       </button>
                     </div>
 
-                    {/* Menu Items */}
+                    {/* Strictly Mode-Isolated Menu Items */}
                     <div className="py-1">
-                      <button
-                        onClick={() => handleNavClick('profile', 'teacher')}
-                        className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
-                          currentPage === 'profile' && profileTab === 'teacher' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
-                        }`}
-                      >
-                        <Share2 className="w-4 h-4 text-indigo-500" />
-                        <span className="font-semibold">Teacher Dashboard</span>
-                        {userMode === 'teacher' && (
-                          <span className="ml-auto text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Active</span>
-                        )}
-                      </button>
+                      {userMode === 'student' ? (
+                        <>
+                          {/* Student Menu: ONLY student features */}
+                          <button
+                            onClick={() => handleNavClick('profile', 'history')}
+                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
+                              currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
+                            }`}
+                          >
+                            <History className="w-4 h-4 text-gray-400" />
+                            <span className="font-semibold">My Practice & Attempt History</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Teacher Menu: ONLY teacher features */}
+                          <button
+                            onClick={() => handleNavClick('profile', 'teacher')}
+                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
+                              currentPage === 'profile' && profileTab === 'teacher' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
+                            }`}
+                          >
+                            <Share2 className="w-4 h-4 text-indigo-500" />
+                            <span className="font-semibold">Classroom Assessments</span>
+                            <span className="ml-auto text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Active</span>
+                          </button>
 
-                      <button
-                        onClick={() => handleNavClick('profile', 'history')}
-                        className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
-                          currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
-                        }`}
-                      >
-                        <History className="w-4 h-4 text-gray-400" />
-                        <span className="font-semibold">Attempt History</span>
-                      </button>
+                          <button
+                            onClick={() => handleNavClick('profile', 'history')}
+                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
+                              currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
+                            }`}
+                          >
+                            <History className="w-4 h-4 text-gray-400" />
+                            <span className="font-semibold">Personal Practice</span>
+                          </button>
+                        </>
+                      )}
 
                       <button
                         onClick={() => {

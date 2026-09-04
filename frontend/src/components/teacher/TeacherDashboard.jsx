@@ -478,10 +478,15 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                       type="button"
                       onClick={() => setSelectedLeaderboardQuiz(quiz)}
                       className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition flex items-center gap-1.5 shadow-sm hover:shadow-md"
-                      title="View Student Leaderboard"
+                      title="View Student Responses & Leaderboard"
                     >
                       <Trophy className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Leaderboard</span>
+                      <span>Responses & Rankings</span>
+                      {(quiz.submission_count || 0) > 0 && (
+                        <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-white/20 rounded-full font-extrabold">
+                          {quiz.submission_count}
+                        </span>
+                      )}
                     </button>
 
                     {(quiz.submission_count || 0) === 0 && (
