@@ -14,7 +14,13 @@ import {
   Users, 
   Loader2, 
   PlusCircle, 
-  AlertCircle 
+  AlertCircle,
+  Search,
+  Filter,
+  Sparkles,
+  Layers,
+  X as XIcon,
+  CheckCircle2
 } from 'lucide-react';
 
 export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
@@ -28,6 +34,12 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   const [quizToDelete, setQuizToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [seedingId, setSeedingId] = useState(null);
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClass, setSelectedClass] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'closed'
 
   const loadTeacherQuizzes = async () => {
     try {
@@ -91,6 +103,21 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
     );
   };
 
+  const handleSeedMockResponses = async (quiz) => {
+    setSeedingId(quiz.id);
+    try {
+      const res = await api.seedMockResponses(quiz.id);
+      if (onShowToast) onShowToast(`Added 4 AI mock student submissions to "${quiz.subject}"!`, 'success');
+      setQuizzes((prev) =>
+        prev.map((q) => (q.id === quiz.id ? { ...q, submission_count: (q.submission_count || 0) + (res.count || 4) } : q))
+      );
+    } catch (err) {
+      if (onShowToast) onShowToast(err.message || 'Failed to generate mock responses.', 'error');
+    } finally {
+      setSeedingId(null);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!quizToDelete) return;
     const targetId = quizToDelete.id;
@@ -121,30 +148,194 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
     }
   };
 
+  // Filter calculations
+  const availableClasses = Array.from(
+    new Set(quizzes.map((q) => q.class_level).filter(Boolean))
+  ).sort();
+
+  const filteredQuizzes = quizzes.filter((quiz) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchSub = (quiz.subject || '').toLowerCase().includes(q);
+      const matchChap = (quiz.chapter || '').toLowerCase().includes(q);
+      const matchClass = (quiz.class_level || '').toLowerCase().includes(q);
+      if (!matchSub && !matchChap && !matchClass) return false;
+    }
+
+    if (selectedClass !== 'All') {
+      if ((quiz.class_level || '') !== selectedClass) return false;
+    }
+
+    const isActive = quiz.is_active !== false;
+    if (statusFilter === 'active' && !isActive) return false;
+    if (statusFilter === 'closed' && isActive) return false;
+
+    return true;
+  });
+
+  const totalSubmissions = quizzes.reduce((acc, q) => acc + (q.submission_count || 0), 0);
+  const activeQuizzesCount = quizzes.filter((q) => q.is_active !== false).length;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 animate-fadeIn pb-20">
       
       {/* ── HEADER ── */}
-      <div className="bg-white rounded-card border border-surface-200 shadow-subtle p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-surface-200 shadow-subtle p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-primary-600" />
-            Teacher Shared Quizzes & Leaderboards
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[10px] font-bold uppercase tracking-wider mb-1.5 border border-primary-100">
+            <Sparkles className="w-3 h-3 text-primary-600" />
+            Teacher Classroom Engine
+          </div>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            Teacher Dashboard & Assessment Center
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Manage assessment timers, close/enable submissions, and view student responses in real time
+          <p className="text-xs text-gray-500 mt-1 max-w-xl leading-relaxed">
+            Create class tests, set timers, track student submissions, and review real-time AI leaderboard analytics.
           </p>
         </div>
 
         <button
           type="button"
           onClick={onCreateQuiz}
-          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-card transition flex items-center gap-1.5 shadow-sm shrink-0"
+          className="px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow-md flex items-center gap-2 shrink-0 active:scale-95"
         >
-          <PlusCircle className="w-4 h-4" />
-          <span>Create & Share New Quiz</span>
+          <PlusCircle className="w-4 h-4 text-primary-200" />
+          <span>Create New Class Test</span>
         </button>
       </div>
+
+      {/* ── QUICK METRICS CARDS ── */}
+      {quizzes.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
+          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xl font-extrabold text-gray-900">{quizzes.length}</div>
+              <div className="text-[11px] font-medium text-gray-500">Total Assessments</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xl font-extrabold text-gray-900">{activeQuizzesCount}</div>
+              <div className="text-[11px] font-medium text-gray-500">Accepting Responses</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-surface-200 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xl font-extrabold text-gray-900">{totalSubmissions}</div>
+              <div className="text-[11px] font-medium text-gray-500">Total Submissions</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SEARCH & FILTER TOOLBAR ── */}
+      {quizzes.length > 0 && (
+        <div className="bg-white rounded-2xl border border-surface-200 shadow-xs p-3.5 mb-6 flex flex-col md:flex-row items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by subject, chapter, or grade..."
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-surface-50 border border-surface-200 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition outline-none text-gray-900 placeholder:text-gray-400 font-medium"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+              >
+                <XIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Class-wise Filter Dropdown & Status */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-48">
+              <Filter className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="w-full pl-8 pr-8 py-2 text-xs font-semibold rounded-xl bg-surface-50 border border-surface-200 hover:border-surface-300 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition outline-none text-gray-800 cursor-pointer appearance-none"
+              >
+                <option value="All">All Classes & Grades</option>
+                {availableClasses.map((cls) => (
+                  <option key={cls} value={cls}>
+                    {cls}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="p-1 bg-surface-100 rounded-xl border border-surface-200 flex items-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  statusFilter === 'all'
+                    ? 'bg-white text-gray-900 shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('active')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  statusFilter === 'active'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('closed')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  statusFilter === 'closed'
+                    ? 'bg-gray-700 text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Closed
+              </button>
+            </div>
+
+            {/* Reset Filters button */}
+            {(searchQuery || selectedClass !== 'All' || statusFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedClass('All');
+                  setStatusFilter('all');
+                }}
+                className="px-2.5 py-2 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl border border-surface-200 transition shrink-0"
+                title="Reset Filters"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 rounded-card bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
@@ -175,9 +366,28 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
             <span>Generate First Quiz</span>
           </button>
         </div>
+      ) : filteredQuizzes.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-surface-200 shadow-subtle space-y-3 animate-fadeIn">
+          <Search className="w-9 h-9 text-gray-300 mx-auto" />
+          <h4 className="text-sm font-bold text-gray-800">No quizzes match your search filters</h4>
+          <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            Try adjusting your search query, class grade, or status filter.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedClass('All');
+              setStatusFilter('all');
+            }}
+            className="px-4 py-2 bg-surface-100 hover:bg-surface-200 text-gray-800 text-xs font-bold rounded-xl border border-surface-300 transition shadow-xs"
+          >
+            Reset Filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {quizzes.map((quiz) => {
+          {filteredQuizzes.map((quiz) => {
             const questionCount = Array.isArray(quiz.questions) ? quiz.questions.length : '?';
             const isActive = quiz.is_active !== false;
             const hasTimer = Boolean(quiz.time_limit_minutes && quiz.time_limit_minutes > 0);
@@ -273,6 +483,24 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
                       <Trophy className="w-3.5 h-3.5 text-amber-300" />
                       <span>Leaderboard</span>
                     </button>
+
+                    {(quiz.submission_count || 0) === 0 && (
+                      <button
+                        type="button"
+                        disabled={seedingId === quiz.id}
+                        onClick={() => handleSeedMockResponses(quiz)}
+                        className="px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
+                        title="Simulate 4 realistic AI student submissions to preview leaderboard"
+                      >
+                        {seedingId === quiz.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-primary-600" />
+                        )}
+                        <span className="hidden sm:inline">+4 AI Demo</span>
+                        <span className="sm:hidden">+4</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">

@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AttemptHistory from './AttemptHistory';
 import TeacherDashboard from '../teacher/TeacherDashboard';
-import { User, History, Share2, Coins, PlusCircle, Sparkles, Mail, Shield } from 'lucide-react';
+import { User, History, Share2, Coins, PlusCircle, Sparkles, Mail, Shield, GraduationCap, BookOpen } from 'lucide-react';
 
-export function UserProfile({ initialTab = 'history', onCreateQuiz, onShowToast }) {
+export function UserProfile({ 
+  initialTab = 'history', 
+  userMode = 'student', 
+  onToggleUserMode,
+  onCreateQuiz, 
+  onShowToast 
+}) {
   const { user, displayName, userInitial, credits, openBuyCreditsModal } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab); // 'history' | 'teacher'
+
+  // Keep active tab in sync if navigated with tab parameter
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 animate-fadeIn pb-20">
@@ -26,7 +39,17 @@ export function UserProfile({ initialTab = 'history', onCreateQuiz, onShowToast 
                 {userInitial}
               </div>
               <div className="pt-1 sm:pt-0">
-                <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{displayName}</h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{displayName}</h2>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    userMode === 'teacher' 
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
+                      : 'bg-primary-50 text-primary-700 border-primary-200'
+                  }`}>
+                    {userMode === 'teacher' ? <BookOpen className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
+                    <span>{userMode === 'teacher' ? 'Teacher Mode' : 'Student Mode'}</span>
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <p className="text-sm text-gray-500 font-medium">{user?.email}</p>

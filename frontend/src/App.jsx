@@ -74,6 +74,15 @@ export function App() {
   });
   const [prefilledSubject, setPrefilledSubject] = useState(null);
 
+  // Dual User Mode: 'student' | 'teacher'
+  const [userMode, setUserMode] = useState(() => {
+    try {
+      return localStorage.getItem('prepo_user_mode') || 'student';
+    } catch {
+      return 'student';
+    }
+  });
+
   // Active Quiz State (persisted so reload never loses spent credits / generated questions)
   const [activeQuizData, setActiveQuizData] = useState(() => {
     try {
@@ -197,6 +206,30 @@ export function App() {
 
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Toggle between Student Mode and Teacher Mode
+  const handleToggleUserMode = (newMode) => {
+    setUserMode(newMode);
+    try {
+      localStorage.setItem('prepo_user_mode', newMode);
+    } catch {}
+
+    if (newMode === 'teacher') {
+      if (!isLoggedIn) {
+        openSignIn();
+        showToast('Please sign in to access Teacher Classroom Suite', 'info');
+        return;
+      }
+      setProfileTab('teacher');
+      setCurrentPage('profile');
+      showToast('Switched to Teacher Mode 👨‍🏫', 'success');
+    } else {
+      if (currentPage === 'profile' && profileTab === 'teacher') {
+        setCurrentPage('home');
+      }
+      showToast('Switched to Student Mode 🎓', 'success');
+    }
   };
 
   // Start Quiz Config from Hero
@@ -356,6 +389,9 @@ export function App() {
         <Navbar 
           onNavigate={handleNavigate} 
           currentPage={currentPage} 
+          profileTab={profileTab}
+          userMode={userMode}
+          onToggleUserMode={handleToggleUserMode}
           hasActiveQuiz={!!activeQuizData && currentPage !== 'attempt'}
           onResumeQuiz={() => setCurrentPage('attempt')}
         />
@@ -474,6 +510,8 @@ export function App() {
         {currentPage === 'profile' && (
           <UserProfile
             initialTab={profileTab}
+            userMode={userMode}
+            onToggleUserMode={handleToggleUserMode}
             onCreateQuiz={() => handleNavigate('config')}
             onShowToast={showToast}
           />

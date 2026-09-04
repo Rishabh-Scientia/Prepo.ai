@@ -270,6 +270,22 @@ export const api = {
     return res.json();
   },
 
+  /** Teacher: Seed 4 realistic AI mock student responses for this quiz */
+  async seedMockResponses(quizId) {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/teacher/shared-quizzes/${quizId}/seed-mock-responses`, {
+      method: 'POST',
+      headers,
+    });
+
+    if (res.status === 401) throw new Error('Your session has expired. Please sign in again.');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(formatApiError(err, `Failed to generate mock responses (HTTP ${res.status})`));
+    }
+    return res.json();
+  },
+
   /** Get remaining user credits */
   async getUserCredits() {
     const headers = await getAuthHeaders();

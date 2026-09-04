@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
-import { X, Trophy, RotateCcw, Loader2, Users, Calendar, AlertCircle } from 'lucide-react';
+import { X, Trophy, RotateCcw, Loader2, Users, Calendar, AlertCircle, Sparkles } from 'lucide-react';
 
 export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState('');
 
   const loadResponses = async () => {
@@ -25,6 +26,20 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
       setError(err.message || 'Could not load student responses.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSeedMockResponses = async () => {
+    if (!quizId) return;
+    try {
+      setSeeding(true);
+      setError('');
+      await api.seedMockResponses(quizId);
+      await loadResponses();
+    } catch (err) {
+      setError(err.message || 'Failed to simulate mock student responses.');
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -96,6 +111,20 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              onClick={handleSeedMockResponses}
+              disabled={seeding || loading}
+              className="px-2.5 py-1.5 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition flex items-center gap-1.5 shadow-xs"
+              title="Add 4 simulated student responses"
+            >
+              {seeding ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-primary-600" />
+              )}
+              <span className="hidden sm:inline">+4 AI Demo</span>
+            </button>
+            <button
               onClick={loadResponses}
               disabled={loading}
               className="p-2 text-gray-500 hover:text-gray-800 rounded-lg transition-colors hover:bg-surface-100"
@@ -128,12 +157,34 @@ export function LeaderboardModal({ isOpen, onClose, quizId, quizTitle }) {
               <span className="text-xs font-medium">Fetching live student responses...</span>
             </div>
           ) : responses.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 space-y-2">
-              <Users className="w-10 h-10 mx-auto text-gray-300" />
-              <p className="text-sm font-bold text-gray-700">No submissions yet</p>
-              <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                Share the test link with your students. Their scores will automatically appear here.
-              </p>
+            <div className="py-12 text-center text-gray-500 space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-surface-100 text-gray-400 flex items-center justify-center mx-auto border border-surface-200">
+                <Users className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800">No student submissions yet</p>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto mt-1 leading-relaxed">
+                  Share the test link with your students, or click below to simulate 4 AI student submissions to test the leaderboard.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSeedMockResponses}
+                disabled={seeding}
+                className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white text-xs font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 active:scale-95"
+              >
+                {seeding ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Simulating Students...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Simulate 4 AI Student Responses</span>
+                  </>
+                )}
+              </button>
             </div>
           ) : (
             <div className="border border-surface-200 rounded-xl overflow-hidden shadow-sm">

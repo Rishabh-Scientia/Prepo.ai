@@ -55,6 +55,7 @@ from store.db_store import (
     delete_user_attempt,
     delete_shared_quiz,
     update_shared_quiz_settings,
+    seed_mock_student_responses,
 )
 from auth.verify import get_current_user
 from graph.generate_graph import build_generate_graph
@@ -606,6 +607,18 @@ async def remove_shared_quiz(quiz_id: str, user: dict = Depends(get_current_user
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete shared quiz.")
     return {"success": True, "message": "Shared quiz and responses deleted successfully."}
+
+
+@app.post("/api/teacher/shared-quizzes/{quiz_id}/seed-mock-responses")
+async def generate_mock_responses_endpoint(quiz_id: str, user: dict = Depends(get_current_user)):
+    """
+    Teacher endpoint: Generate 4 realistic AI mock student responses for this shared quiz.
+    """
+    user_id = user.get("user_id")
+    records = seed_mock_student_responses(quiz_id, user_id)
+    if not records:
+        raise HTTPException(status_code=400, detail="Could not generate mock responses. Ensure quiz exists and has questions.")
+    return {"success": True, "count": len(records), "records": records}
 
 
 

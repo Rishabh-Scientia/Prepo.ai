@@ -628,6 +628,122 @@ def get_quiz_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, 
         return []
 
 
+def seed_mock_student_responses(quiz_id: str, teacher_id: str) -> List[Dict[str, Any]]:
+    """
+    Generate 4 realistic AI mock student responses for a teacher's shared quiz
+    and insert them into student_responses in Supabase.
+    """
+    if not _API_KEY or not quiz_id or not teacher_id:
+        return []
+
+    shared_quiz = get_shared_quiz(quiz_id)
+    if not shared_quiz:
+        return []
+
+    quiz_owner = str(shared_quiz.get("created_by", "")).strip().lower()
+    if quiz_owner != str(teacher_id).strip().lower():
+        return []
+
+    questions = shared_quiz.get("questions", [])
+    if not isinstance(questions, list) or len(questions) == 0:
+        return []
+
+    mock_students = [
+        {"name": "Aarav Sharma", "target_pct": 0.90},
+        {"name": "Priya Patel", "target_pct": 0.80},
+        {"name": "Rohan Verma", "target_pct": 0.65},
+        {"name": "Sneha Gupta", "target_pct": 0.50},
+    ]
+
+    total_q = len(questions)
+    inserted_records = []
+
+    for s_idx, student in enumerate(mock_students):
+        student_name = student["name"]
+        target_correct = max(1, min(total_q, round(total_q * student["target_pct"])))
+        
+        student_answers = []
+        evaluation_results = []
+        score = 0
+
+        # Deterministically select which questions this student gets right
+        correct_indices = set([
+            (q_idx * 3 + s_idx * 2) % total_q for q_idx in range(target_correct)
+        ])
+        if len(correct_indices) < target_correct:
+            for i in range(total_q):
+                if len(correct_indices) >= target_correct:
+                    break
+                correct_indices.add(i)
+
+        for q_idx, q in enumerate(questions):
+            q_id = q.get("id") or f"q{q_idx + 1}"
+            correct_opt = str(q.get("correct_answer", "")).strip()
+            options = q.get("options", [])
+            is_correct = (q_idx in correct_indices)
+
+            if is_correct:
+                selected_option = correct_opt
+                score += 1
+            else:
+                wrong_opts = [str(opt).strip() for opt in options if str(opt).strip() != correct_opt]
+                if wrong_opts:
+                    selected_option = wrong_opts[(q_idx + s_idx) % len(wrong_opts)]
+                else:
+                    selected_option = "Option B" if correct_opt != "Option B" else "Option A"
+
+            student_answers.append({
+                "question_id": str(q_id),
+                "selected_option": selected_option,
+            })
+
+            explanation = q.get("explanation", {})
+            evaluation_results.append({
+                "question_id": str(q_id),
+                "question_text": q.get("question", ""),
+                "options": options,
+                "selected_option": selected_option,
+                "is_correct": is_correct,
+                "correct_answer": correct_opt,
+                "explanation": {
+                    "confirmation": explanation.get("confirmation", "Correct!" if is_correct else "Incorrect."),
+                    "core_concept": explanation.get("core_concept", ""),
+                    "reasoning": explanation.get("reasoning", ""),
+                    "why_incorrect_option_wrong": explanation.get("why_incorrect_option_wrong", ""),
+                },
+            })
+
+        payload = {
+            "quiz_id": quiz_id,
+            "student_name": student_name,
+            "score": score,
+            "total": total_q,
+            "student_answers": student_answers,
+            "evaluation_results": evaluation_results,
+        }
+
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/student_responses"
+        try:
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                endpoint,
+                data=data_bytes,
+                headers=_get_headers(),
+                method="POST",
+            )
+            with urllib.request.urlopen(req) as response:
+                res_body = response.read().decode("utf-8")
+                res_json = json.loads(res_body)
+                if isinstance(res_json, list) and len(res_json) > 0:
+                    inserted_records.append(res_json[0])
+                else:
+                    inserted_records.append(payload)
+        except Exception as err:
+            print(f"ERROR inserting mock student response for {student_name}: {err}")
+
+    return inserted_records
+
+
 def delete_shared_quiz(quiz_id: str, teacher_id: str) -> bool:
     """
     Delete a shared quiz and its responses created by teacher_id.
