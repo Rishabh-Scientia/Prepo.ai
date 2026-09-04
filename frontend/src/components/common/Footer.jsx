@@ -98,16 +98,16 @@ export function Footer({ onNavigate }) {
       </div>
 
       {/* ── BOTTOM BRANDING & SOCIAL LINKS ── */}
-      <div className="border-t border-surface-200 bg-surface-50 pt-6 pb-28 sm:py-6">
+      <div className="border-t border-surface-200 bg-surface-50 pt-6 pb-32 sm:py-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           
-          {/* Colorful Your Bench Attribution */}
-          <div className="text-xs text-gray-600 order-2 sm:order-1">
+          {/* Colorful Your Bench Attribution (On Top on Mobile) */}
+          <div className="text-xs text-gray-600">
             © {new Date().getFullYear()} Prepo.ai | A <strong className="font-extrabold"><span className="text-emerald-600">Your</span> <span className="text-gray-900">Bench</span></strong> Product. All rights reserved.
           </div>
 
-          {/* Social / External Links */}
-          <div className="flex items-center gap-3 order-1 sm:order-2">
+          {/* Social / External Links (Below Text on Mobile) */}
+          <div className="flex items-center gap-3">
             {/* Instagram */}
             <a
               href="https://www.instagram.com/your.bench"

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import ConfirmModal from '../common/ConfirmModal';
 import QuizResults from '../quiz/QuizResults';
+import ShareQuizModal from '../teacher/ShareQuizModal';
 import { 
   History, 
   Calendar, 
@@ -14,7 +15,8 @@ import {
   ArrowRight,
   BookOpen,
   TrendingUp,
-  Clock
+  Clock,
+  Share2
 } from 'lucide-react';
 
 export function AttemptHistory({ onCreateQuiz, onShowToast }) {
@@ -26,6 +28,7 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
   const [selectedAttemptData, setSelectedAttemptData] = useState(null);
   const [attemptToDelete, setAttemptToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [shareModalQuizId, setShareModalQuizId] = useState(null);
 
   const loadAttempts = async () => {
     try {
@@ -55,6 +58,7 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
         score: attempt.score,
         total: attempt.total,
         results: attempt.evaluation_results,
+        session_id: attempt.session_id,
         config: {
           subject: attempt.subject,
           chapter: attempt.chapter,
@@ -71,6 +75,7 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
         score: full.score,
         total: full.total,
         results: full.evaluation_results || [],
+        session_id: full.session_id || attempt.session_id,
         config: {
           subject: full.subject,
           chapter: full.chapter,
@@ -80,6 +85,23 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
       });
     } catch (err) {
       if (onShowToast) onShowToast('Could not load detailed response.', 'error');
+    }
+  };
+
+  const handleShareAttempt = async (attempt) => {
+    const sessId = attempt?.session_id || attempt?.id;
+    if (!sessId) {
+      if (onShowToast) onShowToast('Session ID not found for this quiz attempt.', 'error');
+      return;
+    }
+    try {
+      if (onShowToast) onShowToast('Generating shareable quiz link...', 'info');
+      const res = await api.shareQuiz(sessId);
+      if (res && res.shared_quiz_id) {
+        setShareModalQuizId(res.shared_quiz_id);
+      }
+    } catch (err) {
+      if (onShowToast) onShowToast(err.message || 'Could not share this quiz.', 'error');
     }
   };
 
@@ -142,6 +164,7 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
         <QuizResults
           resultsData={selectedAttemptData}
           onRetake={onCreateQuiz}
+          onShareQuiz={() => handleShareAttempt(selectedAttemptData)}
           onShowToast={onShowToast}
         />
       </div>
@@ -270,20 +293,32 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
                   </div>
 
                   {/* Action Footer */}
-                  <div className="px-5 py-3 border-t border-surface-100 bg-surface-50/50 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => handleViewAttempt(att)}
-                      className="px-4 py-2 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-all flex items-center gap-2 hover:shadow-sm"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>View AI Solutions</span>
-                    </button>
+                  <div className="px-4 sm:px-5 py-3 border-t border-surface-100 bg-surface-50/50 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleViewAttempt(att)}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-all flex items-center gap-1.5 hover:shadow-2xs active:scale-95"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View AI Solutions</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleShareAttempt(att)}
+                        className="px-3 py-1.5 sm:py-2 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                        title="Share this test with students or peers"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Share</span>
+                      </button>
+                    </div>
 
                     <button
                       type="button"
                       onClick={() => setAttemptToDelete(att)}
-                      className="p-2 text-gray-400 hover:text-rose-600 rounded-lg transition-all hover:bg-rose-50 sm:opacity-0 sm:group-hover:opacity-100"
+                      className="p-1.5 sm:p-2 text-gray-400 hover:text-rose-600 rounded-lg transition-all hover:bg-rose-50"
                       title="Delete Attempt"
                       aria-label="Delete Attempt"
                     >
@@ -308,6 +343,16 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
           confirmText="Delete Record"
           isDanger={true}
           isLoading={deletingId !== null}
+        />
+      )}
+
+      {/* ── SHARE QUIZ MODAL ── */}
+      {shareModalQuizId && (
+        <ShareQuizModal
+          isOpen={!!shareModalQuizId}
+          onClose={() => setShareModalQuizId(null)}
+          sharedQuizId={shareModalQuizId}
+          onShowToast={onShowToast}
         />
       )}
     </div>

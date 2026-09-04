@@ -557,7 +557,7 @@ export function App() {
               } catch {}
               setCurrentPage('config');
             }}
-            onShareQuiz={isLoggedIn && userMode === 'teacher' ? handleShareCurrentQuiz : null}
+            onShareQuiz={isLoggedIn ? handleShareCurrentQuiz : null}
             onShowToast={showToast}
           />
         )}

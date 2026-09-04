@@ -13,6 +13,7 @@ export function UserProfile({
 }) {
   const { user, displayName, userInitial, credits, openBuyCreditsModal } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab); // 'history' | 'teacher'
+  const [studentSubTab, setStudentSubTab] = useState('attempts'); // 'attempts' | 'shared'
 
   // Keep active tab in sync if navigated with tab parameter
   useEffect(() => {
@@ -100,13 +101,42 @@ export function UserProfile({
         <TeacherDashboard onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
       ) : (
         <div>
+          {/* Sub-Tabs for Student Mode */}
           <div className="mb-6 pb-2 border-b border-surface-200 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-primary-700 font-extrabold text-sm sm:text-base">
-              <History className="w-4 h-4" />
-              <span>My Practice Tests & Performance</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStudentSubTab('attempts')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                  studentSubTab === 'attempts'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <History className="w-4 h-4" />
+                <span>My Practice Tests</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudentSubTab('shared')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                  studentSubTab === 'shared'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Shared Class Tests</span>
+              </button>
             </div>
           </div>
-          <AttemptHistory onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
+
+          {studentSubTab === 'shared' ? (
+            <TeacherDashboard onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
+          ) : (
+            <AttemptHistory onCreateQuiz={onCreateQuiz} onShowToast={onShowToast} />
+          )}
         </div>
       )}
     </div>
