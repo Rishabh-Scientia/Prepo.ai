@@ -4,7 +4,6 @@ import { api } from './services/api';
 
 // Components
 import Navbar from './components/common/Navbar';
-import DesktopSidebar from './components/common/DesktopSidebar';
 import MobileBottomNav from './components/common/MobileBottomNav';
 import Footer from './components/common/Footer';
 import Toast from './components/common/Toast';
@@ -220,9 +219,6 @@ export function App() {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // Whether sidebar should be shown (hidden during quiz attempts and guest student tests)
-  const showSidebar = currentPage !== 'student' && currentPage !== 'attempt';
 
   // Toggle between Student Mode and Teacher Mode
   const handleToggleUserMode = (newMode) => {
@@ -442,22 +438,9 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-surface-100 text-gray-800 ${showSidebar ? 'desktop-app-layout' : 'flex flex-col justify-between'}`}>
+    <div className="min-h-screen flex flex-col justify-between bg-surface-100 text-gray-800">
       
-      {/* ── DESKTOP SIDEBAR (Hidden in active quiz attempt & guest student test) ── */}
-      {showSidebar && (
-        <DesktopSidebar
-          currentPage={currentPage}
-          profileTab={profileTab}
-          userMode={userMode}
-          onToggleUserMode={handleToggleUserMode}
-          onNavigate={handleNavigate}
-          hasActiveQuiz={!!activeQuizData && currentPage !== 'attempt'}
-          onResumeQuiz={() => setCurrentPage('attempt')}
-        />
-      )}
-
-      {/* ── MOBILE NAVBAR (Hidden on desktop — sidebar replaces it) ── */}
+      {/* ── NAVBAR (Hidden in active quiz attempt & guest student test) ── */}
       {currentPage !== 'student' && currentPage !== 'attempt' && (
         <Navbar 
           onNavigate={handleNavigate} 
@@ -471,7 +454,7 @@ export function App() {
       )}
 
       {/* ── MAIN BODY CONTENT ── */}
-      <main className={`flex-1 pb-20 md:pb-0 ${showSidebar ? 'flex flex-col' : ''}`}>
+      <main className="flex-1 pb-20 md:pb-0">
         
         {/* 1. HOME PAGE */}
         {currentPage === 'home' && (
@@ -603,10 +586,10 @@ export function App() {
           />
         )}
 
-        {/* ── FOOTER (inside main so it flows correctly with sidebar layout) ── */}
-        {currentPage === 'home' && <Footer onNavigate={handleNavigate} />}
-
       </main>
+
+      {/* ── FOOTER ── */}
+      {currentPage === 'home' && <Footer onNavigate={handleNavigate} />}
 
       {/* ── MODALS ── */}
       <SignInModal />

@@ -238,7 +238,7 @@ export function AttemptHistory({ onCreateQuiz, onShowToast }) {
           </div>
 
           {/* Attempt Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {attempts.map((att) => {
               const pct = Math.round((att.score / att.total) * 100);
               const isDeleting = deletingId === att.id;

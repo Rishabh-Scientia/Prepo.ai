@@ -6,7 +6,7 @@ export function Footer({ onNavigate }) {
     <footer className="bg-white border-t border-surface-200 mt-20 text-gray-600">
       
       {/* ── TOP SECTION (3 COLUMNS) ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
           
           {/* Col 1: Brand & Tagline */}
@@ -99,7 +99,7 @@ export function Footer({ onNavigate }) {
 
       {/* ── BOTTOM BRANDING & SOCIAL LINKS ── */}
       <div className="border-t border-surface-200 bg-surface-50 pt-6 pb-32 sm:py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           
           {/* Colorful Your Bench Attribution (On Top on Mobile) */}
           <div className="text-xs text-gray-600">

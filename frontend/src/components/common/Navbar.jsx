@@ -70,7 +70,7 @@ export function Navbar({
   };
 
   return (
-    <nav className="md:hidden bg-white/95 backdrop-blur-md border-b border-surface-200/80 sticky top-0 z-40 transition-all">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-surface-200/80 sticky top-0 z-40 transition-all">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         
         {/* Brand Logo & Tagline */}

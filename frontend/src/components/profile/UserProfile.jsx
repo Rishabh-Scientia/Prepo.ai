@@ -12,26 +12,18 @@ export function UserProfile({
   onShowToast 
 }) {
   const { user, displayName, userInitial, credits, openBuyCreditsModal } = useAuth();
-  const [activeTab, setActiveTab] = useState(initialTab === 'shared' ? 'history' : initialTab); // 'history' | 'teacher'
-  const [studentSubTab, setStudentSubTab] = useState(initialTab === 'shared' ? 'shared' : 'attempts'); // 'attempts' | 'shared'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'history' | 'teacher'
+  const [studentSubTab, setStudentSubTab] = useState('attempts'); // 'attempts' | 'shared'
 
   // Keep active tab in sync if navigated with tab parameter
   useEffect(() => {
     if (initialTab) {
-      if (initialTab === 'shared') {
-        setActiveTab('history');
-        setStudentSubTab('shared');
-      } else {
-        setActiveTab(initialTab);
-        if (initialTab === 'history') {
-          setStudentSubTab('attempts');
-        }
-      }
+      setActiveTab(initialTab);
     }
   }, [initialTab]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 animate-fadeIn pb-20">
+    <div className="max-w-5xl mx-auto px-4 py-8 animate-fadeIn pb-20">
       
       {/* ── PROFILE HERO CARD ── */}
       <div className="bg-white rounded-xl border border-surface-200 shadow-subtle overflow-hidden mb-8">
