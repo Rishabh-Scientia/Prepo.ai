@@ -145,7 +145,7 @@ export function Footer({ onNavigate }) {
 
             {/* Website */}
             <a
-              href="https://your-bench-flax.vercel.app/"
+              href="https://www.yourbench.co.in/"
               target="_blank"
               rel="noopener noreferrer"
               title="Your Bench Official Website"
