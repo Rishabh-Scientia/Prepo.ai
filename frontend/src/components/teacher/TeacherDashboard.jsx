@@ -161,7 +161,7 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
   const activeQuizzesCount = quizzes.filter((q) => q.is_active !== false).length;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 animate-fadeIn pb-20">
+    <div className="max-w-7xl mx-auto px-4 py-6 animate-fadeIn pb-20">
       
       {/* ── HEADER ── */}
       <div className="bg-white rounded-2xl border border-surface-200 shadow-subtle p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -358,7 +358,7 @@ export function TeacherDashboard({ onCreateQuiz, onShowToast }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredQuizzes.map((quiz) => {
             const questionCount = Array.isArray(quiz.questions) ? quiz.questions.length : '?';
             const isActive = quiz.is_active !== false;
