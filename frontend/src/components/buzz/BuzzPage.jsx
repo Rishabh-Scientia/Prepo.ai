@@ -171,7 +171,7 @@ export function BuzzPage({ onNavigate, onShowToast }) {
   };
 
   const handleShareWhatsApp = () => {
-    const text = `🔥 *Prepo.ai Buzz Challenge!* 🔥%0A%0ABhai mujhe Prepo.ai par Buzz kar de! Bas 1 click me sign in karke Buzz button dabana hai.%0A%0A⚡ Tujhe aur mujhe dono ko 10 ⭐ milenge!%0A💸 1,000 stars complete hote hi seedha ₹100 UPI Cash withdraw kar sakte hain.%0A%0ATap here to Buzz me: ${encodeURIComponent(shareUrl)}`;
+    const text = `🔥 *Prepo.ai Buzz Challenge!* 🔥%0A%0AHey! Buzz me on Prepo.ai with just 1 click to help me unlock rewards!%0A%0A⚡ You and I both get 10 ⭐ stars!%0A💸 Reach 1,000 stars to instantly withdraw ₹100 direct UPI Cash!%0A%0ATap here to Buzz me: ${encodeURIComponent(shareUrl)}`;
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -406,7 +406,7 @@ export function BuzzPage({ onNavigate, onShowToast }) {
                 </p>
               ) : (
                 <p className="text-slate-300">
-                  Bas <strong className="text-amber-400 font-bold">{starsNeeded} stars</strong> ({friendsNeeded} friends) aur chahiye ₹100 UPI transfer unlock karne ke liye!
+                  Only <strong className="text-amber-400 font-bold">{starsNeeded} more stars</strong> ({friendsNeeded} friends) needed to unlock ₹100 direct UPI transfer!
                 </p>
               )}
             </div>
