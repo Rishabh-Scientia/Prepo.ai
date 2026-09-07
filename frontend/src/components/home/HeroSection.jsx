@@ -11,7 +11,7 @@ import {
   Award
 } from 'lucide-react';
 
-export function HeroSection({ onStartQuiz, onSelectSubject }) {
+export function HeroSection({ onStartQuiz, onSelectSubject, onNavigate }) {
   const quickSubjects = [
     { name: 'Physics', classLevel: 'Class 12 CBSE', chapter: 'Electrostatics' },
     { name: 'Mathematics', classLevel: 'JEE Main / Advanced', chapter: 'Calculus & Integration' },
@@ -26,9 +26,29 @@ export function HeroSection({ onStartQuiz, onSelectSubject }) {
       
       {/* ── HERO BANNER ── */}
       <div className="text-center max-w-3xl mx-auto px-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700 mb-6">
-          <Sparkles className="w-3.5 h-3.5 text-primary-600" />
-          <span>AI-Powered Adaptive Assessment Engine</span>
+        {/* Prepo Buzz Viral Banner */}
+        <div className="mb-4 inline-flex">
+          <button
+            type="button"
+            onClick={() => onNavigate?.('buzz')}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300 hover:border-amber-400 text-xs font-bold text-amber-900 transition shadow-xs hover:shadow-sm active:scale-95 group cursor-pointer"
+          >
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="text-amber-600 font-extrabold">⚡ Prepo Buzz:</span>
+            <span>Invite friends & Earn ₹100 UPI Cash</span>
+            <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded-full uppercase ml-0.5">Earn ₹100</span>
+            <ArrowRight className="w-3 h-3 text-amber-600 group-hover:translate-x-0.5 transition" />
+          </button>
+        </div>
+
+        <div className="block">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-700 mb-6">
+            <Sparkles className="w-3.5 h-3.5 text-primary-600" />
+            <span>AI-Powered Adaptive Assessment Engine</span>
+          </div>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight sm:leading-tight">

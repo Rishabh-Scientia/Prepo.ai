@@ -23,6 +23,7 @@ import QuizAttempt from './components/quiz/QuizAttempt';
 import QuizResults from './components/quiz/QuizResults';
 import UserProfile from './components/profile/UserProfile';
 import StudentQuizEntry from './components/student/StudentQuizEntry';
+import BuzzPage from './components/buzz/BuzzPage';
 
 import { Sparkles, FileText, ArrowLeft, Layers } from 'lucide-react';
 
@@ -36,11 +37,22 @@ export function App() {
     credits 
   } = useAuth();
 
-  // Navigation State: 'home' | 'config' | 'attempt' | 'results' | 'profile' | 'student'
+  // Navigation State: 'home' | 'config' | 'attempt' | 'results' | 'profile' | 'student' | 'buzz'
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('quiz_id')) return 'student';
+
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      if (
+        pathname.startsWith('/buzz') || 
+        params.get('page') === 'buzz' || 
+        params.get('ref') || 
+        params.get('code') || 
+        params.get('buzz_ref')
+      ) {
+        return 'buzz';
+      }
 
       const savedPage = sessionStorage.getItem('prepo_current_page');
       if (savedPage === 'attempt') {
@@ -187,14 +199,48 @@ export function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [currentPage, activeQuizData]);
 
-  // Check URL query parameters for ?quiz_id=...
+  // Check URL query parameters for ?quiz_id=... or /buzz
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qId = params.get('quiz_id');
     if (qId) {
       setStudentQuizId(qId);
       setCurrentPage('student');
+      return;
     }
+
+    const pathname = window.location.pathname;
+    if (
+      pathname.startsWith('/buzz') || 
+      params.get('page') === 'buzz' || 
+      params.get('ref') || 
+      params.get('code') || 
+      params.get('buzz_ref')
+    ) {
+      setCurrentPage('buzz');
+    }
+
+    const handlePopState = () => {
+      const p = new URLSearchParams(window.location.search);
+      const currentPath = window.location.pathname;
+      if (p.get('quiz_id')) {
+        setStudentQuizId(p.get('quiz_id'));
+        setCurrentPage('student');
+      } else if (
+        currentPath.startsWith('/buzz') || 
+        p.get('page') === 'buzz' || 
+        p.get('ref') || 
+        p.get('code')
+      ) {
+        setCurrentPage('buzz');
+      } else {
+        const savedPage = sessionStorage.getItem('prepo_current_page');
+        setCurrentPage(savedPage || 'home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleNavigate = (page, tab = 'history') => {
@@ -210,6 +256,16 @@ export function App() {
         'You have an active test in progress!\n\nAre you sure you want to navigate away? Your answers are saved, and you can resume anytime using "Resume Test" in the navbar.'
       );
       if (!confirmLeave) return;
+    }
+
+    if (page === 'buzz') {
+      try {
+        window.history.pushState({}, '', '/buzz');
+      } catch {}
+    } else if (currentPage === 'buzz' && page !== 'buzz') {
+      try {
+        window.history.pushState({}, '', '/');
+      } catch {}
     }
 
     if (page === 'profile') {
@@ -461,6 +517,7 @@ export function App() {
           <HeroSection
             onStartQuiz={handleStartQuizFromHero}
             onSelectSubject={handleSelectSubjectFromHero}
+            onNavigate={handleNavigate}
           />
         )}
 
@@ -586,6 +643,14 @@ export function App() {
           />
         )}
 
+        {/* 7. PREPO BUZZ VIRAL CASH REWARD PAGE */}
+        {currentPage === 'buzz' && (
+          <BuzzPage
+            onNavigate={handleNavigate}
+            onShowToast={showToast}
+          />
+        )}
+
       </main>
 
       {/* ── FOOTER ── */}
@@ -646,7 +711,7 @@ export function App() {
       />
 
       {/* ── MOBILE BOTTOM NAVIGATION BAR (Native App Style as in Photo 3) ── */}
-      {currentPage !== 'student' && currentPage !== 'attempt' && (
+      {currentPage !== 'student' && currentPage !== 'attempt' && currentPage !== 'buzz' && (
         <MobileBottomNav
           currentPage={currentPage}
           profileTab={profileTab}

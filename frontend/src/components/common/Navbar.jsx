@@ -16,7 +16,9 @@ import {
   Clock,
   GraduationCap,
   BookOpen,
-  Check
+  Check,
+  Zap,
+  Flame
 } from 'lucide-react';
 
 export function Navbar({ 
@@ -177,6 +179,20 @@ export function Navbar({
             </>
           )}
 
+          {/* Buzz & Earn ₹100 CTA */}
+          <button
+            onClick={() => handleNavClick('buzz')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs hover:shadow-sm active:scale-95 ${
+              currentPage === 'buzz'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 ring-2 ring-amber-400 font-black shadow-amber-500/20'
+                : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 text-amber-800 hover:bg-amber-100 hover:border-amber-400'
+            }`}
+            title="Prepo Buzz: Invite friends & Earn ₹100 UPI Cashback!"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-pulse" />
+            <span>Buzz & Earn ₹100</span>
+          </button>
+
           {/* Resume Test if user has an ongoing active quiz */}
           {hasActiveQuiz && (
             <button
@@ -308,6 +324,18 @@ export function Navbar({
                       <button
                         onClick={() => {
                           setIsDropdownOpen(false);
+                          handleNavClick('buzz');
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-xs text-amber-900 hover:bg-amber-50 flex items-center gap-2.5 transition-colors font-bold"
+                      >
+                        <Zap className="w-4 h-4 text-amber-500 fill-amber-400" />
+                        <span>Prepo Buzz</span>
+                        <span className="ml-auto text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 px-1.5 py-0.5 rounded-full shadow-xs">₹100 Cash</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
                           openBuyCreditsModal();
                         }}
                         className="w-full px-4 py-2.5 text-left text-xs text-amber-800 hover:bg-amber-50 flex items-center gap-2.5 transition-colors"
@@ -371,6 +399,23 @@ export function Navbar({
       {/* Mobile Drawer (Only account, mode switch, and pricing — navigation is on MobileBottomNav) */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-surface-200 bg-white px-4 py-3.5 space-y-3 animate-fadeIn shadow-xl">
+          {/* Buzz & Earn ₹100 Mobile Banner Button */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              handleNavClick('buzz');
+            }}
+            className="w-full text-left px-3.5 py-3 text-xs font-black bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 rounded-xl flex items-center justify-between shadow-md shadow-amber-500/20 active:scale-98 transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 fill-slate-950" />
+              <span>⚡ Prepo Buzz & Earn ₹100</span>
+            </div>
+            <span className="text-[10px] bg-slate-950/20 px-2 py-0.5 rounded-full text-slate-950 font-black uppercase tracking-wider">
+              Cashback
+            </span>
+          </button>
+
           {/* Dual Mode Switcher Pill (Mobile) */}
           <div className="bg-surface-100 p-1 rounded-xl border border-surface-200 flex items-center">
             <button
