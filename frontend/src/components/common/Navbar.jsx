@@ -11,14 +11,13 @@ import {
   X, 
   Sparkles, 
   PlusCircle, 
-  ChevronDown,
+  ChevronDown, 
   CreditCard,
   Clock,
   GraduationCap,
   BookOpen,
-  Check,
   Zap,
-  Flame
+  Lock
 } from 'lucide-react';
 
 export function Navbar({ 
@@ -48,7 +47,7 @@ export function Navbar({
   const dropdownRef = useRef(null);
 
   // Extract first name or fallback to 'My Account'
-  const firstName = displayName ? displayName.trim().split(' ')[0] : 'My Account';
+  const firstName = displayName ? displayName.trim().split(' ')[0] : 'Account';
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -74,173 +73,154 @@ export function Navbar({
   };
 
   return (
-    <nav className="bg-white/95 backdrop-blur-md border-b border-surface-200/80 sticky top-0 z-40 transition-all">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 transition-all shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         
-        {/* Brand Logo & Tagline - Dynamic Theme Colors based on Subscription Plan */}
-        <div className="flex items-center gap-3">
+        {/* LEFT: Brand Logo & Main Navigation Links */}
+        <div className="flex items-center gap-6 lg:gap-8 shrink-0">
           <button 
             onClick={() => handleNavClick(userMode === 'teacher' ? 'profile' : 'home', 'teacher')}
-            className="flex items-center gap-2 focus:outline-none group text-left"
+            className="flex items-center gap-2.5 focus:outline-none group text-left"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105 ${
+            {/* Minimalist modern brand mark */}
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-105 ${
               plan === 'teacher'
-                ? 'bg-gradient-to-br from-emerald-800 via-teal-800 to-green-950 border border-emerald-500/40 shadow-emerald-900/30'
+                ? 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800'
                 : plan === 'student'
-                ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 border border-blue-500/40 shadow-blue-900/30'
-                : 'bg-gradient-to-br from-primary-600 to-primary-700'
+                ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800'
+                : 'bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-700'
             }`}>
-              <span className="text-white font-black text-base">P</span>
+              <span className="text-white font-black text-sm tracking-tight">P</span>
             </div>
-            <div className="flex items-center">
-              <span className="font-extrabold text-lg text-gray-900 tracking-tight">
-                Prepo
-                <span className={plan === 'teacher' ? 'text-emerald-600' : plan === 'student' ? 'text-blue-700' : 'text-primary-600'}>
-                  .ai
-                </span>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base sm:text-lg text-gray-900 tracking-tight">
+                Prepo<span className={plan === 'teacher' ? 'text-emerald-600' : plan === 'student' ? 'text-blue-600' : 'text-primary-600'}>.ai</span>
               </span>
+
+              {/* Refined subtle tier micro-tag */}
               {plan === 'teacher' && (
-                <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-900 text-emerald-100 border border-emerald-600 shadow-2xs">
+                <span className="hidden sm:inline-flex text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                   Teacher
                 </span>
               )}
               {plan === 'student' && (
-                <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-900 text-blue-100 border border-blue-600 shadow-2xs">
+                <span className="hidden sm:inline-flex text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
                   Student
-                </span>
-              )}
-              {plan === 'free' && (
-                <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md bg-surface-200 text-gray-600 border border-surface-300">
-                  Free
                 </span>
               )}
             </div>
           </button>
 
-          {/* Dual Mode Switcher Pill (Desktop) */}
-          <div className="hidden sm:flex items-center bg-surface-100/90 p-1 rounded-xl border border-surface-200/90 shadow-2xs ml-1">
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center gap-1">
             <button
-              type="button"
-              onClick={() => handleModeChange('student')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                userMode === 'student'
-                  ? 'bg-white text-primary-700 shadow-xs ring-1 ring-black/5'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+              onClick={() => handleNavClick('home')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                currentPage === 'home'
+                  ? 'text-primary-700 bg-primary-50/80 font-semibold'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
-              title="Student Mode: Syllabus practice, MCQs, and 4-part AI explanations"
             >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Student</span>
+              Home
             </button>
+
             <button
-              type="button"
-              onClick={() => handleModeChange('teacher')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                userMode === 'teacher'
-                  ? 'bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+              onClick={() => handleNavClick('academy')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                currentPage === 'academy'
+                  ? 'text-primary-700 bg-primary-50/80 font-semibold'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
-              title={hasTeacherAccess ? "Teacher Mode: Create classroom tests and track live student submissions" : "Teacher Mode (Requires Teacher Pack ₹49)"}
+              title="Interactive Digital Books & AI Lessons"
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Teacher</span>
-              {!hasTeacherAccess && (
-                <span className="text-[9px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.2 rounded border border-amber-300">
-                  ₹49
-                </span>
-              )}
+              <BookOpen className="w-3.5 h-3.5 text-primary-600" />
+              <span>AI Academy</span>
+            </button>
+
+            {userMode === 'teacher' && (
+              <button
+                onClick={() => handleNavClick('profile', 'teacher')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                  currentPage === 'profile' && profileTab === 'teacher'
+                    ? 'text-emerald-800 bg-emerald-50 font-semibold'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Classroom</span>
+              </button>
+            )}
+
+            {/* Subtle Buzz & Earn Link */}
+            <button
+              onClick={() => handleNavClick('buzz')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                currentPage === 'buzz'
+                  ? 'text-amber-900 bg-amber-50 font-semibold border border-amber-200/70'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-amber-50/50'
+              }`}
+              title="Prepo Buzz: Invite friends & Earn ₹100 Cashback"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+              <span>Buzz & Earn</span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800">
+                ₹100
+              </span>
             </button>
           </div>
         </div>
 
-        {/* Desktop Nav Actions */}
-        <div className="hidden md:flex items-center gap-2 lg:gap-3">
-          {/* Conditional Navigation Links based on Mode */}
-          {userMode === 'student' ? (
-            <>
-              {/* Home */}
-              <button
-                onClick={() => handleNavClick('home')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                  currentPage === 'home'
-                    ? 'text-primary-700 bg-primary-50 font-extrabold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
-                }`}
-              >
-                <Home className="w-3.5 h-3.5" />
-                <span>Home</span>
-              </button>
+        {/* RIGHT: Segmented Switcher, Actions & Profile */}
+        <div className="hidden md:flex items-center gap-2.5 lg:gap-3">
+          
+          {/* Refined Segmented Mode Switcher */}
+          <div className="inline-flex items-center bg-gray-100/80 p-0.5 rounded-lg border border-gray-200/60">
+            <button
+              type="button"
+              onClick={() => handleModeChange('student')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all ${
+                userMode === 'student'
+                  ? 'bg-white text-gray-900 font-semibold shadow-xs'
+                  : 'text-gray-500 hover:text-gray-800 font-medium'
+              }`}
+              title="Student Mode: Syllabus practice, MCQs & explanations"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-primary-600" />
+              <span>Student</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleModeChange('teacher')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all ${
+                userMode === 'teacher'
+                  ? 'bg-emerald-700 text-white font-semibold shadow-xs'
+                  : 'text-gray-500 hover:text-gray-800 font-medium'
+              }`}
+              title={hasTeacherAccess ? "Teacher Mode: Create tests & track student responses" : "Teacher Mode (Exclusive to Teacher Pack ₹49)"}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Teacher</span>
+              {!hasTeacherAccess && (
+                <Lock className="w-3 h-3 text-gray-400" />
+              )}
+            </button>
+          </div>
 
-              {/* AI Academy (Interactive Books) */}
-              <button
-                onClick={() => handleNavClick('academy')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                  currentPage === 'academy'
-                    ? 'text-primary-700 bg-primary-50 font-extrabold ring-1 ring-primary-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
-                }`}
-                title="Interactive 3D Digital Books & AI Lessons"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-primary-600" />
-                <span>AI Academy</span>
-                <span className="text-[9px] font-black bg-gradient-to-r from-primary-600 to-indigo-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">New</span>
-              </button>
+          <div className="h-4 w-[1px] bg-gray-200" />
 
-              {/* Student Practice Test CTA */}
-              <button
-                onClick={() => handleNavClick('config')}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
-                  currentPage === 'config'
-                    ? 'bg-primary-700 text-white ring-2 ring-primary-300'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-primary-200" />
-                <span>Practice Test</span>
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Teacher Dashboard */}
-              <button
-                onClick={() => handleNavClick('profile', 'teacher')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                  currentPage === 'profile' && profileTab === 'teacher'
-                    ? 'text-indigo-700 bg-indigo-50 font-extrabold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Classroom Dashboard</span>
-              </button>
-
-              {/* Create Class Test CTA */}
-              <button
-                onClick={() => handleNavClick('config')}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 active:scale-95 ${
-                  currentPage === 'config'
-                    ? 'bg-indigo-700 text-white ring-2 ring-indigo-300'
-                    : 'bg-gradient-to-r from-indigo-600 to-primary-700 hover:from-indigo-700 hover:to-primary-800 text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
-                <span>Create Class Test</span>
-              </button>
-            </>
-          )}
-
-          {/* Buzz & Earn ₹100 CTA */}
+          {/* Primary Action Button (Practice / Create) */}
           <button
-            onClick={() => handleNavClick('buzz')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs hover:shadow-sm active:scale-95 ${
-              currentPage === 'buzz'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 ring-2 ring-amber-400 font-black shadow-amber-500/20'
-                : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 text-amber-800 hover:bg-amber-100 hover:border-amber-400'
+            onClick={() => handleNavClick('config')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow flex items-center gap-1.5 active:scale-95 text-white ${
+              userMode === 'teacher'
+                ? 'bg-emerald-700 hover:bg-emerald-800'
+                : 'bg-primary-600 hover:bg-primary-700'
             }`}
-            title="Prepo Buzz: Invite friends & Earn ₹100 UPI Cashback!"
           >
-            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-pulse" />
-            <span>Buzz & Earn ₹100</span>
+            <Sparkles className="w-3.5 h-3.5 opacity-90" />
+            <span>{userMode === 'teacher' ? 'Class Test' : 'New Test'}</span>
           </button>
 
           {/* Resume Test if user has an ongoing active quiz */}
@@ -249,41 +229,47 @@ export function Navbar({
               onClick={() => {
                 if (onResumeQuiz) onResumeQuiz();
               }}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white flex items-center gap-1.5 shadow-sm ring-2 ring-amber-300 ring-offset-1 animate-pulse transition-all active:scale-95"
+              className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 shadow-xs transition-all active:scale-95 animate-pulse"
               title="You have a test in progress! Click to return."
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Resume Test</span>
+              <span>Resume</span>
             </button>
           )}
 
           {isLoggedIn ? (
             <>
-              {/* Credits Badge */}
+              {/* Refined Credits Pill */}
               <button
                 onClick={openBuyCreditsModal}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 hover:border-amber-300 rounded-lg text-xs font-bold text-amber-800 transition-all hover:shadow-xs group"
-                title="Click to buy more credits"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200/60 rounded-lg text-xs font-medium text-amber-900 transition-all cursor-pointer group"
+                title="Your balance. Click to top up."
               >
-                <Coins className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-12 transition-transform" />
-                <span>{credits}</span>
-                <PlusCircle className="w-3.5 h-3.5 text-amber-500/70 group-hover:text-amber-600" />
+                <Coins className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-gray-900 group-hover:text-amber-900">{credits}</span>
+                <span className="text-[11px] text-amber-700/80">credits</span>
               </button>
 
               {/* User Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className={`flex items-center gap-2 p-1 pl-2 rounded-lg transition-all focus:outline-none ${
+                  className={`flex items-center gap-2 p-1 pl-1.5 rounded-lg transition-all focus:outline-none ${
                     isDropdownOpen
-                      ? 'bg-primary-50 border border-primary-200 shadow-xs'
-                      : 'hover:bg-surface-100 border border-transparent hover:border-surface-200'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'hover:bg-gray-50 text-gray-700'
                   }`}
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs">
+                  <div className={`w-7 h-7 text-white rounded-md flex items-center justify-center text-xs font-bold shadow-xs ${
+                    plan === 'teacher' 
+                      ? 'bg-emerald-700' 
+                      : plan === 'student' 
+                      ? 'bg-blue-700' 
+                      : 'bg-primary-600'
+                  }`}>
                     {userInitial}
                   </div>
-                  <span className="text-xs font-bold text-gray-800 hidden lg:inline max-w-[100px] truncate">
+                  <span className="text-xs font-medium text-gray-700 hidden lg:inline max-w-[85px] truncate">
                     {firstName}
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -291,84 +277,73 @@ export function Navbar({
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white border border-surface-200 rounded-2xl shadow-elevated overflow-hidden z-50 animate-scaleUp">
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-50 animate-scaleUp">
                     {/* User Info Header */}
-                    <div className="px-4 py-3 bg-gradient-to-r from-surface-50 to-surface-100 border-b border-surface-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl flex items-center justify-center text-sm font-bold shadow-xs">
+                    <div className="px-4 py-3 bg-gray-50/80 border-b border-gray-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs">
                           {userInitial}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
-                          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                          <p className="text-xs font-bold text-gray-900 truncate">{displayName}</p>
+                          <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
                         </div>
                       </div>
 
-                      {/* Active Mode indicator inside dropdown */}
-                      <div className="mt-2.5 pt-2 border-t border-surface-200/80 flex items-center justify-between text-xs">
-                        <span className="text-gray-500 font-medium">Active Mode:</span>
-                        <div className="inline-flex items-center gap-1 font-bold text-primary-700 bg-white px-2 py-0.5 rounded-md border border-surface-200">
-                          {userMode === 'teacher' ? (
-                            <>
-                              <BookOpen className="w-3 h-3 text-indigo-600" />
-                              <span>Teacher Mode</span>
-                            </>
-                          ) : (
-                            <>
-                              <GraduationCap className="w-3 h-3 text-primary-600" />
-                              <span>Student Mode</span>
-                            </>
-                          )}
-                        </div>
+                      {/* Active Plan Tag */}
+                      <div className="mt-2 pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500">Plan:</span>
+                        <span className={`font-semibold uppercase text-[10px] px-1.5 py-0.2 rounded ${
+                          plan === 'teacher' 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : plan === 'student' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-gray-200 text-gray-700'
+                        }`}>
+                          {plan === 'teacher' ? 'Teacher Pack' : plan === 'student' ? 'Student Pack' : 'Free Tier'}
+                        </span>
                       </div>
                     </div>
 
                     {/* Mode switch option in dropdown */}
-                    <div className="p-2 border-b border-surface-200 bg-surface-50/50">
+                    <div className="p-2 border-b border-gray-100 bg-gray-50/40">
                       <button
                         onClick={() => {
                           handleModeChange(userMode === 'teacher' ? 'student' : 'teacher');
                           setIsDropdownOpen(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-white hover:text-primary-700 rounded-lg flex items-center justify-between border border-transparent hover:border-surface-200 transition-all shadow-2xs"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-gray-700 hover:bg-white hover:text-primary-700 rounded-md flex items-center justify-between border border-transparent hover:border-gray-200/80 transition-all shadow-2xs"
                       >
                         <span className="flex items-center gap-2">
-                          {userMode === 'teacher' ? <GraduationCap className="w-4 h-4 text-primary-600" /> : <BookOpen className="w-4 h-4 text-indigo-600" />}
+                          {userMode === 'teacher' ? <GraduationCap className="w-3.5 h-3.5 text-primary-600" /> : <BookOpen className="w-3.5 h-3.5 text-emerald-600" />}
                           <span>Switch to {userMode === 'teacher' ? 'Student Mode' : 'Teacher Mode'}</span>
                         </span>
-                        <span className="text-[10px] text-gray-400 font-normal">Toggle</span>
+                        <span className="text-[10px] text-gray-400">Toggle</span>
                       </button>
                     </div>
 
                     {/* Strictly Mode-Isolated Menu Items */}
                     <div className="py-1">
                       {userMode === 'student' ? (
-                        <>
-                          {/* Student Menu: ONLY student features */}
-                          <button
-                            onClick={() => handleNavClick('profile', 'history')}
-                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
-                              currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
-                            }`}
-                          >
-                            <History className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold">My Practice & Attempt History</span>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleNavClick('profile', 'history')}
+                          className={`w-full px-3.5 py-2 text-left text-xs text-gray-700 hover:bg-primary-50/70 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
+                            currentPage === 'profile' && profileTab === 'history' ? 'bg-primary-50/70 text-primary-700 font-semibold' : ''
+                          }`}
+                        >
+                          <History className="w-4 h-4 text-gray-400" />
+                          <span>Practice History</span>
+                        </button>
                       ) : (
-                        <>
-                          {/* Teacher Menu: ONLY teacher features */}
-                          <button
-                            onClick={() => handleNavClick('profile', 'teacher')}
-                            className={`w-full px-4 py-2.5 text-left text-xs text-gray-700 hover:bg-primary-50 hover:text-primary-700 flex items-center gap-2.5 transition-colors ${
-                              currentPage === 'profile' && profileTab === 'teacher' ? 'bg-primary-50/70 text-primary-700 font-bold' : ''
-                            }`}
-                          >
-                            <Share2 className="w-4 h-4 text-indigo-500" />
-                            <span className="font-semibold">Classroom Assessments</span>
-                            <span className="ml-auto text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Active</span>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleNavClick('profile', 'teacher')}
+                          className={`w-full px-3.5 py-2 text-left text-xs text-gray-700 hover:bg-emerald-50/70 hover:text-emerald-800 flex items-center gap-2.5 transition-colors ${
+                            currentPage === 'profile' && profileTab === 'teacher' ? 'bg-emerald-50/70 text-emerald-800 font-semibold' : ''
+                          }`}
+                        >
+                          <Share2 className="w-4 h-4 text-emerald-600" />
+                          <span>Classroom Assessments</span>
+                        </button>
                       )}
 
                       <button
@@ -376,11 +351,11 @@ export function Navbar({
                           setIsDropdownOpen(false);
                           handleNavClick('buzz');
                         }}
-                        className="w-full px-4 py-2.5 text-left text-xs text-amber-900 hover:bg-amber-50 flex items-center gap-2.5 transition-colors font-bold"
+                        className="w-full px-3.5 py-2 text-left text-xs text-amber-900 hover:bg-amber-50 flex items-center gap-2.5 transition-colors font-medium"
                       >
                         <Zap className="w-4 h-4 text-amber-500 fill-amber-400" />
                         <span>Prepo Buzz</span>
-                        <span className="ml-auto text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 px-1.5 py-0.5 rounded-full shadow-xs">₹100 Cash</span>
+                        <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded">₹100</span>
                       </button>
 
                       <button
@@ -388,23 +363,23 @@ export function Navbar({
                           setIsDropdownOpen(false);
                           openBuyCreditsModal();
                         }}
-                        className="w-full px-4 py-2.5 text-left text-xs text-amber-800 hover:bg-amber-50 flex items-center gap-2.5 transition-colors"
+                        className="w-full px-3.5 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
                       >
-                        <CreditCard className="w-4 h-4 text-amber-500" />
-                        <span className="font-semibold">Pricing</span>
-                        <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{credits}</span>
+                        <CreditCard className="w-4 h-4 text-gray-400" />
+                        <span>Pricing & Plans</span>
+                        <span className="ml-auto text-[10px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{credits} left</span>
                       </button>
                     </div>
 
                     {/* Sign Out */}
-                    <div className="border-t border-surface-200 py-1">
+                    <div className="border-t border-gray-100 py-1">
                       <button
                         onClick={() => {
                           setIsDropdownOpen(false);
                           signOut();
                           handleNavClick('home');
                         }}
-                        className="w-full px-4 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors font-semibold"
+                        className="w-full px-3.5 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors font-medium"
                       >
                         <LogOut className="w-4 h-4 text-red-400" />
                         <span>Sign Out</span>
@@ -417,7 +392,7 @@ export function Navbar({
           ) : (
             <button
               onClick={openSignIn}
-              className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-xl transition-all shadow-xs hover:shadow-sm"
+              className="px-3.5 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-all shadow-xs hover:shadow"
             >
               Sign In
             </button>
@@ -429,7 +404,7 @@ export function Navbar({
           {isLoggedIn && (
             <button
               onClick={openBuyCreditsModal}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-800"
+              className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-800"
             >
               <Coins className="w-3.5 h-3.5 text-amber-500" />
               <span>{credits}</span>
@@ -438,7 +413,7 @@ export function Navbar({
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-surface-100 focus:outline-none transition-colors"
+            className="p-1.5 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 focus:outline-none transition-colors"
             aria-label="Toggle Menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -448,14 +423,14 @@ export function Navbar({
 
       {/* Mobile Drawer (Only account, mode switch, and pricing — navigation is on MobileBottomNav) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-surface-200 bg-white px-4 py-3.5 space-y-3 animate-fadeIn shadow-xl">
+        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3.5 space-y-3 animate-fadeIn shadow-xl">
           {/* Buzz & Earn ₹100 Mobile Banner Button */}
           <button
             onClick={() => {
               setIsMobileMenuOpen(false);
               handleNavClick('buzz');
             }}
-            className="w-full text-left px-3.5 py-3 text-xs font-black bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 rounded-xl flex items-center justify-between shadow-md shadow-amber-500/20 active:scale-98 transition cursor-pointer"
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 rounded-xl flex items-center justify-between shadow-xs active:scale-98 transition cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 fill-slate-950" />
@@ -475,7 +450,7 @@ export function Navbar({
             className={`w-full text-left px-3.5 py-2.5 text-xs font-bold rounded-xl flex items-center justify-between border transition cursor-pointer ${
               currentPage === 'academy'
                 ? 'bg-primary-50 text-primary-800 border-primary-300 font-extrabold'
-                : 'bg-surface-50 hover:bg-surface-100 text-gray-800 border-surface-200'
+                : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -488,7 +463,7 @@ export function Navbar({
           </button>
 
           {/* Dual Mode Switcher Pill (Mobile) */}
-          <div className="bg-surface-100 p-1 rounded-xl border border-surface-200 flex items-center">
+          <div className="bg-gray-100 p-1 rounded-xl border border-gray-200 flex items-center">
             <button
               type="button"
               onClick={() => handleModeChange('student')}
@@ -506,7 +481,7 @@ export function Navbar({
               onClick={() => handleModeChange('teacher')}
               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                 userMode === 'teacher'
-                  ? 'bg-gradient-to-r from-indigo-600 to-primary-700 text-white shadow-xs'
+                  ? 'bg-emerald-700 text-white shadow-xs'
                   : 'text-gray-500 hover:text-gray-800'
               }`}
             >
@@ -516,9 +491,9 @@ export function Navbar({
           </div>
 
           {isLoggedIn ? (
-            <div className="p-3 bg-surface-50 rounded-xl border border-surface-200/80 flex items-center justify-between">
+            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
                   {userInitial}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -547,14 +522,14 @@ export function Navbar({
 
           {/* Sign Out / Sign In */}
           {isLoggedIn ? (
-            <div className="pt-2 border-t border-surface-100">
+            <div className="pt-2 border-t border-gray-100">
               <button
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                   signOut();
                   handleNavClick('home');
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-colors"
+                className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-colors"
               >
                 <LogOut className="w-4 h-4 text-red-400" />
                 <span>Sign Out</span>
