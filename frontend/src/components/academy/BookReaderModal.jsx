@@ -280,88 +280,98 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
             </div>
           )}
 
-          {/* ── 3D REALISTIC BOOK CONTAINER WITH SPINE & PAGE SHADOWS ── */}
+          {/* ── 3D REALISTIC BOOK CONTAINER WITH SPINE & DUAL PAGE SPREAD ── */}
           <div 
             className="relative w-full max-w-5xl h-full max-h-[720px] flex shadow-2xl rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-surface-300"
             style={{ perspective: '2000px' }}
           >
             
-            {/* REALISTIC BOOK BINDING SHADOW (CENTER SPINE) */}
-            <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-12 pointer-events-none z-20">
-              <div className="w-full h-full bg-gradient-to-r from-transparent via-black/15 to-transparent" />
-              <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1.5px] bg-black/30 shadow-xs" />
-            </div>
+            {/* ── LEFT PAGE: PREVIOUS CHAPTER (already read) — Desktop Only ── */}
+            <div className="hidden md:flex md:w-1/2 bg-gradient-to-l from-surface-50 via-white to-surface-100/60 flex-col justify-between relative overflow-hidden border-r border-surface-200/50">
+              {/* Subtle page lines texture */}
+              <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 27px, #94a3b8 27px, #94a3b8 28px)' }} />
+              
+              {currentPageIndex > 0 ? (
+                /* Show previous chapter content (already flipped page) */
+                <div className="flex-1 flex flex-col p-6 sm:p-8 overflow-y-auto relative z-10">
+                  <div>
+                    {/* Previous Page Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-surface-200/60 mb-4">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">
+                          Chapter {currentPageIndex} of {totalPages}
+                        </span>
+                        <h3 className="text-base font-black text-gray-400 tracking-tight">
+                          {t(module.pages[currentPageIndex - 1].title)}
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-bold bg-surface-100 text-gray-400 px-2.5 py-1 rounded-md border border-surface-200 shrink-0">
+                        Page {currentPageIndex}
+                      </span>
+                    </div>
 
-            {/* ── LEFT DESKTOP PANEL: OUTLINE & BOOK SPINE (Page 1 of dual view) ── */}
-            <div className="hidden md:flex md:w-5/12 bg-surface-50 p-6 sm:p-8 flex-col justify-between border-r border-surface-200 relative overflow-hidden">
-              {/* Paper gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-surface-100/60 via-white to-surface-50 pointer-events-none" />
-
-              <div className="relative z-10">
-                {/* Module Badge & Language indicator */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-md text-white bg-gradient-to-r ${module.themeColor.cover}`}>
+                    {/* Previous Page Content (faded, already read) */}
+                    <div className="opacity-50 pointer-events-none">
+                      {module.pages[currentPageIndex - 1].content && (
+                        <MarkdownContent content={t(module.pages[currentPageIndex - 1].content)} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* First page: show book cover info on left */
+                <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10 text-center">
+                  <span className={`text-xs font-black px-3 py-1.5 rounded-lg text-white bg-gradient-to-r ${module.themeColor.cover} shadow-md mb-4`}>
                     MODULE {module.moduleNumber}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-surface-200 shadow-2xs">
-                    <Globe className="w-3 h-3 text-primary-600" />
-                    <span className="uppercase">{currentLang}</span>
-                  </div>
-                </div>
-
-                <h1 className="text-xl font-black text-gray-900 tracking-tight leading-snug mb-2">
-                  {t(module.title)}
-                </h1>
-                <p className="text-xs text-gray-600 font-medium leading-relaxed mb-5">
-                  {t(module.subtitle)}
-                </p>
-
-                {/* 10 Chapters Mini-Index */}
-                <div className="space-y-1.5 pt-4 border-t border-surface-200/90 max-h-[340px] overflow-y-auto pr-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                      Book Chapters
-                    </span>
-                    <span className="text-[10px] font-bold text-primary-600">
-                      10 Chapters
-                    </span>
-                  </div>
-
-                  {module.pages.map((pg, idx) => (
-                    <div 
-                      key={idx}
-                      onClick={() => goToPage(idx, idx > currentPageIndex ? 'next' : 'prev')}
-                      className={`flex items-center gap-2 text-xs py-1.5 px-2 rounded-lg cursor-pointer transition-all ${
-                        currentPageIndex === idx 
-                          ? 'bg-white text-primary-700 font-bold shadow-2xs border border-primary-200 ring-1 ring-primary-100' 
-                          : 'text-gray-500 hover:text-gray-800 hover:bg-surface-100/80'
-                      }`}
-                    >
-                      <span className={`w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold shrink-0 ${
-                        currentPageIndex === idx ? 'bg-primary-600 text-white' : 'bg-surface-200 text-gray-500'
-                      }`}>
-                        {idx + 1}
-                      </span>
-                      <span className="truncate font-medium">{t(pg.title).replace(/^Chapter \d+:\s*/, '')}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bottom Pro Tip Box */}
-              <div className="relative z-10 pt-4 border-t border-surface-200/90">
-                <div className="p-3 bg-white rounded-xl border border-surface-200 shadow-2xs flex items-start gap-2.5">
-                  <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-gray-600 leading-snug font-medium">
-                    Switch between <strong>English</strong>, <strong>Hinglish</strong>, and <strong>Hindi</strong> anytime using the language switcher at the top!
+                  <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-snug mb-3">
+                    {t(module.title)}
+                  </h1>
+                  <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6 max-w-xs">
+                    {t(module.subtitle)}
                   </p>
+                  
+                  {/* Mini chapter list preview */}
+                  <div className="w-full max-w-xs space-y-1.5 text-left">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-2">
+                      {totalPages} Chapters
+                    </span>
+                    {module.pages.slice(0, 5).map((pg, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs text-gray-500 py-1">
+                        <span className="w-4 h-4 rounded-full bg-surface-200 text-[9px] flex items-center justify-center font-bold text-gray-500 shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="truncate font-medium">{t(pg.title).replace(/^Chapter \d+:\s*/, '')}</span>
+                      </div>
+                    ))}
+                    {totalPages > 5 && (
+                      <span className="text-[10px] text-gray-400 font-bold pl-6">+ {totalPages - 5} more chapters...</span>
+                    )}
+                  </div>
+
+                  {/* Language tip */}
+                  <div className="mt-6 p-3 bg-white rounded-xl border border-surface-200 shadow-2xs flex items-start gap-2.5 max-w-xs">
+                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-gray-600 leading-snug font-medium text-left">
+                      Switch between <strong>English</strong>, <strong>Hinglish</strong>, and <strong>Hindi</strong> anytime!
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Page curl shadow on right edge of left page */}
+              <div className="absolute top-0 bottom-0 right-0 w-6 pointer-events-none z-20 bg-gradient-to-l from-black/[0.08] to-transparent" />
             </div>
 
-            {/* ── RIGHT PANEL: ACTIVE CHAPTER CONTENT WITH 3D FLIP ANIMATION ── */}
+            {/* REALISTIC BOOK BINDING SHADOW (CENTER SPINE) */}
+            <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-8 pointer-events-none z-30">
+              <div className="w-full h-full bg-gradient-to-r from-transparent via-black/[0.12] to-transparent" />
+              <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1px] bg-black/20" />
+            </div>
+
+            {/* ── RIGHT PAGE: CURRENT CHAPTER CONTENT WITH 3D FLIP ANIMATION ── */}
             <div 
-              className={`flex-1 flex flex-col justify-between p-5 sm:p-8 bg-white overflow-y-auto relative ${
+              className={`flex-1 md:w-1/2 flex flex-col justify-between p-5 sm:p-8 bg-white overflow-y-auto relative ${
                 isFlipping 
                   ? (turnDirection === 'next' 
                       ? 'book-page-flip-next' 
@@ -369,7 +379,10 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
                   : ''
               }`}
             >
-              <div>
+              {/* Page curl shadow on left edge of right page */}
+              <div className="hidden md:block absolute top-0 bottom-0 left-0 w-6 pointer-events-none z-20 bg-gradient-to-r from-black/[0.06] to-transparent" />
+
+              <div className="relative z-10">
                 {/* Chapter Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-surface-200/80 mb-4">
                   <div>
@@ -392,7 +405,7 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
                   </p>
                 )}
 
-                {/* ── 1. CLEAN MARKDOWN / CONTENT RENDERER (NO RAW ### GLITCH) ── */}
+                {/* ── 1. CLEAN MARKDOWN / CONTENT RENDERER ── */}
                 {currentPage.content && (
                   <MarkdownContent content={t(currentPage.content)} />
                 )}
@@ -611,7 +624,7 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
               </div>
 
               {/* ── FOOTER CONTROLS (NEXT / PREV) ── */}
-              <div className="pt-5 mt-5 border-t border-surface-200/90 flex items-center justify-between">
+              <div className="pt-5 mt-5 border-t border-surface-200/90 flex items-center justify-between relative z-10">
                 <button
                   onClick={handlePrev}
                   disabled={currentPageIndex === 0}
