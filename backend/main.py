@@ -690,11 +690,19 @@ CREDIT_PLANS = {
     },
 }
 
-# Aliases for backward compatibility and flexible checkout
-CREDIT_PLANS["plan_19"] = CREDIT_PLANS["plan_student"]
-CREDIT_PLANS["plan_49"] = CREDIT_PLANS["plan_teacher"]
-CREDIT_PLANS["plan_30"] = CREDIT_PLANS["plan_student"]
-CREDIT_PLANS["plan_100"] = CREDIT_PLANS["plan_teacher"]
+PLAN_ALIASES = {
+    "plan_19": "plan_student",
+    "plan_49": "plan_teacher",
+    "plan_30": "plan_student",
+    "plan_100": "plan_teacher",
+}
+
+def get_plan_by_id(plan_id: str) -> Optional[dict]:
+    """Retrieve plan by primary plan_id or backwards-compatible alias."""
+    if plan_id in CREDIT_PLANS:
+        return CREDIT_PLANS[plan_id]
+    target_key = PLAN_ALIASES.get(plan_id)
+    return CREDIT_PLANS.get(target_key) if target_key else None
 
 
 def _create_razorpay_order(amount: int, currency: str, receipt: str, notes: dict) -> dict:
@@ -768,6 +776,7 @@ def _verify_razorpay_signature(order_id: str, payment_id: str, signature: str) -
 async def get_payment_plans():
     """
     Public endpoint to fetch available credit top-up offers and public key ID.
+    Returns only unique active plans.
     """
     return {
         "plans": list(CREDIT_PLANS.values()),
@@ -780,7 +789,7 @@ async def create_payment_order(request: CreateOrderRequest, user: dict = Depends
     """
     Create a Razorpay order for purchasing credits.
     """
-    plan = CREDIT_PLANS.get(request.plan_id)
+    plan = get_plan_by_id(request.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail=f"Invalid plan_id. Allowed: {list(CREDIT_PLANS.keys())}")
 
@@ -816,7 +825,7 @@ async def verify_payment(request: VerifyPaymentRequest, user: dict = Depends(get
     """
     Verify payment signature, add credits to user account, and log transaction.
     """
-    plan = CREDIT_PLANS.get(request.plan_id)
+    plan = get_plan_by_id(request.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail=f"Invalid plan_id: {request.plan_id}")
 

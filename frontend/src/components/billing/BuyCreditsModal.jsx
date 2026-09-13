@@ -53,7 +53,16 @@ export function BuyCreditsModal({ onPaymentSuccess, onShowToast }) {
       setLoading(true);
       const data = await api.getPaymentPlans();
       if (data && data.plans && data.plans.length > 0) {
-        setPlans(data.plans);
+        const unique = [];
+        const seen = new Set();
+        for (const p of data.plans) {
+          const key = (p.name || p.plan_id || '').toLowerCase().trim();
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(p);
+          }
+        }
+        setPlans(unique);
       } else {
         setPlans([
           {
