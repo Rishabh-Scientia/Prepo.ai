@@ -73,32 +73,16 @@ export function HeroSection({ onStartQuiz, onSelectSubject, onNavigate }) {
         {/* Subtle Top Ambient Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[600px] h-[300px] bg-gradient-to-tr from-primary-200/30 via-indigo-200/20 to-blue-200/20 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-        {/* Dual Announcement Pills (AI Academy + Buzz) */}
-        <div className="flex flex-wrap items-center justify-center gap-2.5 mb-6">
-          {/* AI Academy Feature Pill */}
-          <button
-            type="button"
-            onClick={() => onNavigate?.('academy')}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-50/90 hover:bg-primary-100/80 border border-primary-200/80 text-xs font-semibold text-primary-800 transition shadow-2xs hover:shadow-xs group cursor-pointer"
-          >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-600"></span>
-            </span>
-            <span className="font-bold text-primary-700">New Feature:</span>
-            <span>AI Academy Digital Books</span>
-            <span className="text-[10px] bg-primary-600 text-white font-bold px-1.5 py-0.2 rounded-full">10 Books</span>
-            <ArrowRight className="w-3 h-3 text-primary-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-
-          {/* Prepo Buzz Pill */}
+        {/* Announcement Pill (Prepo Buzz) */}
+        <div className="flex items-center justify-center mb-6">
           <button
             type="button"
             onClick={() => onNavigate?.('buzz')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-xs font-semibold text-amber-900 transition shadow-2xs hover:shadow-xs group cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-xs font-semibold text-amber-900 transition shadow-2xs hover:shadow-xs group cursor-pointer"
           >
             <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-            <span>Buzz & Earn ₹100</span>
+            <span className="font-bold text-amber-700">Prepo Buzz:</span>
+            <span>Invite friends & Earn ₹100 UPI Cash</span>
             <ChevronRight className="w-3 h-3 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
