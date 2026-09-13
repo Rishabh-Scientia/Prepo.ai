@@ -108,28 +108,24 @@ export function MobileBottomNav({
           <span className="text-[10px] mt-0.5 font-medium text-amber-800">Pricing</span>
         </button>
 
-        {/* TAB 5: Mode Switcher */}
+        {/* TAB 5: AI Academy (Interactive Digital Books) */}
         <button
           type="button"
-          onClick={() => {
-            if (onToggleMode) {
-              onToggleMode(isStudent ? 'teacher' : 'student');
-            } else {
-              onNavigate('profile', isStudent ? 'history' : 'teacher');
-            }
-          }}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            isStudent ? 'text-primary-700' : 'text-indigo-700'
+          onClick={() => onNavigate('academy')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors relative ${
+            currentPage === 'academy' ? 'text-primary-700 font-bold' : 'text-gray-500 hover:text-gray-800'
           }`}
-          title={`Currently in ${isStudent ? 'Student' : 'Teacher'} Mode. Tap to switch.`}
+          title="Prepo AI Academy: Interactive Digital Books"
         >
-          {isStudent ? (
-            <GraduationCap className="w-5 h-5 stroke-2 text-primary-600" />
-          ) : (
-            <BookOpen className="w-5 h-5 stroke-2 text-indigo-600" />
-          )}
+          <div className="relative">
+            <BookOpen className={`w-5 h-5 ${currentPage === 'academy' ? 'stroke-[2.5] text-primary-600' : 'stroke-2 text-gray-500'}`} />
+            <span className="absolute -top-1 -right-1.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-600"></span>
+            </span>
+          </div>
           <span className="text-[9px] mt-0.5 font-bold uppercase tracking-wider">
-            {isStudent ? 'Student' : 'Teacher'}
+            Academy
           </span>
         </button>
 

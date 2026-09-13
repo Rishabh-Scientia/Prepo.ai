@@ -136,6 +136,21 @@ export function Navbar({
                 <span>Home</span>
               </button>
 
+              {/* AI Academy (Interactive Books) */}
+              <button
+                onClick={() => handleNavClick('academy')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                  currentPage === 'academy'
+                    ? 'text-primary-700 bg-primary-50 font-extrabold ring-1 ring-primary-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-surface-100'
+                }`}
+                title="Interactive 3D Digital Books & AI Lessons"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-primary-600" />
+                <span>AI Academy</span>
+                <span className="text-[9px] font-black bg-gradient-to-r from-primary-600 to-indigo-600 text-white px-1.5 py-0.2 rounded-full shadow-2xs">New</span>
+              </button>
+
               {/* Student Practice Test CTA */}
               <button
                 onClick={() => handleNavClick('config')}
@@ -413,6 +428,27 @@ export function Navbar({
             </div>
             <span className="text-[10px] bg-slate-950/20 px-2 py-0.5 rounded-full text-slate-950 font-black uppercase tracking-wider">
               Cashback
+            </span>
+          </button>
+
+          {/* AI Academy Mobile Drawer Button */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              handleNavClick('academy');
+            }}
+            className={`w-full text-left px-3.5 py-2.5 text-xs font-bold rounded-xl flex items-center justify-between border transition cursor-pointer ${
+              currentPage === 'academy'
+                ? 'bg-primary-50 text-primary-800 border-primary-300 font-extrabold'
+                : 'bg-surface-50 hover:bg-surface-100 text-gray-800 border-surface-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary-600" />
+              <span>📚 AI Academy (10 Digital Books)</span>
+            </div>
+            <span className="text-[10px] bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full font-bold">
+              Read
             </span>
           </button>
 

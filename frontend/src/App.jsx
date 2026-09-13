@@ -24,6 +24,7 @@ import QuizResults from './components/quiz/QuizResults';
 import UserProfile from './components/profile/UserProfile';
 import StudentQuizEntry from './components/student/StudentQuizEntry';
 import BuzzPage from './components/buzz/BuzzPage';
+import AIAcademy from './components/academy/AIAcademy';
 
 import { Sparkles, FileText, ArrowLeft, Layers } from 'lucide-react';
 
@@ -646,6 +647,14 @@ export function App() {
         {/* 7. PREPO BUZZ VIRAL CASH REWARD PAGE */}
         {currentPage === 'buzz' && (
           <BuzzPage
+            onNavigate={handleNavigate}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* 8. PREPO AI ACADEMY (INTERACTIVE 3D DIGITAL BOOKS) */}
+        {currentPage === 'academy' && (
+          <AIAcademy
             onNavigate={handleNavigate}
             onShowToast={showToast}
           />
