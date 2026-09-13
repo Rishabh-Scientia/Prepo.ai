@@ -7,8 +7,6 @@ import {
   Check, 
   ExternalLink, 
   ListOrdered, 
-  Volume2, 
-  VolumeX, 
   Sparkles, 
   BookOpen, 
   Lightbulb, 
@@ -26,9 +24,8 @@ import {
 import { SUPPORTED_LANGUAGES, resolveLang } from '../../data/aiAcademyCourses';
 import MarkdownContent from './MarkdownContent';
 
-// Play subtle realistic page flip sound using Web Audio API
-function playFlipSound(enabled) {
-  if (!enabled) return;
+// Play subtle realistic page flip sound using Web Audio API (Always active)
+function playFlipSound() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
@@ -66,7 +63,6 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentLang, setCurrentLang] = useState('en'); // 'en' | 'hinglish' | 'hi'
   const [copiedPrompt, setCopiedPrompt] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [turnDirection, setTurnDirection] = useState('next');
   const [isFlipping, setIsFlipping] = useState(false);
@@ -197,13 +193,13 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
     if (newIndex < 0 || newIndex >= totalPages || isFlipping) return;
     setIsFlipping(true);
     setTurnDirection(direction);
-    playFlipSound(soundEnabled);
+    playFlipSound();
 
     setTimeout(() => {
       setCurrentPageIndex(newIndex);
       setIsFlipping(false);
     }, 500);
-  }, [totalPages, isFlipping, soundEnabled]);
+  }, [totalPages, isFlipping]);
 
   const handleNext = () => {
     if (currentPageIndex < totalPages - 1) {
@@ -253,48 +249,56 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn">
+    <div 
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       {/* ── MAIN MODAL CONTAINER ── */}
       <div className="relative w-full max-w-6xl h-[95vh] sm:h-[90vh] bg-surface-100 rounded-2xl sm:rounded-3xl shadow-2xl border border-surface-300 flex flex-col overflow-hidden">
         
         {/* ── TOP NAV HEADER: BOOK CONTROLS & 3-LANGUAGE SWITCHER ── */}
-        <div className="h-16 px-4 sm:px-6 bg-white border-b border-surface-200 flex items-center justify-between shrink-0 z-20 shadow-2xs gap-3">
+        <div className="h-14 sm:h-16 px-2.5 sm:px-6 bg-white border-b border-surface-200 flex items-center justify-between shrink-0 z-20 shadow-2xs gap-1.5 sm:gap-3">
           
           {/* Left: Book Meta */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`text-[11px] font-black px-2.5 py-1 rounded-md text-white bg-gradient-to-r ${module.themeColor.cover} shadow-2xs shrink-0`}>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 max-w-[80px] xs:max-w-[120px] sm:max-w-[200px] md:max-w-xs shrink">
+            <span className={`text-[11px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-white bg-gradient-to-r ${module.themeColor.cover} shadow-2xs shrink-0`}>
               M{module.moduleNumber}
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 hidden xs:block">
               <h2 className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">
                 {t(module.title)}
               </h2>
-              <p className="text-[10px] text-gray-500 font-medium truncate hidden sm:block">
+              <p className="text-[10px] text-gray-500 font-medium truncate hidden md:block">
                 {t(currentPage.title)}
               </p>
             </div>
           </div>
 
           {/* Center: 3-Language Segmented Switcher & Page Progress */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Language Switcher Pill */}
-            <div className="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200 shadow-2xs">
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <button
-                  key={lang.id}
-                  onClick={() => setCurrentLang(lang.id)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    currentLang === lang.id
-                      ? 'bg-white text-primary-700 shadow-xs ring-1 ring-black/5 font-extrabold'
-                      : 'text-gray-500 hover:text-gray-900'
-                  }`}
-                  title={`Switch to ${lang.label}`}
-                >
-                  <span className="text-xs">{lang.flag}</span>
-                  <span className="hidden sm:inline">{lang.label}</span>
-                  <span className="sm:hidden">{lang.id.toUpperCase()}</span>
-                </button>
-              ))}
+            <div className="flex items-center bg-surface-100 p-0.5 sm:p-1 rounded-xl border border-surface-200 shadow-2xs">
+              {SUPPORTED_LANGUAGES.map((lang) => {
+                const shortLabel = lang.id === 'hinglish' ? 'HING' : lang.id.toUpperCase();
+                return (
+                  <button
+                    key={lang.id}
+                    onClick={() => setCurrentLang(lang.id)}
+                    className={`flex items-center gap-1 px-1.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      currentLang === lang.id
+                        ? 'bg-white text-primary-700 shadow-xs ring-1 ring-black/5 font-extrabold'
+                        : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                    title={`Switch to ${lang.label}`}
+                  >
+                    <span className="text-xs">{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.label}</span>
+                    <span className="sm:hidden text-[10px] font-black">{shortLabel}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Page Count (Desktop) */}
@@ -312,18 +316,18 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Table of Contents Button */}
             <button
               onClick={() => setIsTocOpen(!isTocOpen)}
-              className={`px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 ${
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 ${
                 isTocOpen 
                   ? 'bg-primary-50 text-primary-700 border-primary-300 shadow-2xs' 
                   : 'bg-white text-gray-700 border-surface-200 hover:bg-surface-50'
               }`}
               title="Table of Contents"
             >
-              <ListOrdered className="w-3.5 h-3.5 text-primary-600" />
+              <ListOrdered className="w-3.5 h-3.5 text-primary-600 shrink-0" />
               <span className="hidden sm:inline">Chapters ({totalPages})</span>
             </button>
 
@@ -331,10 +335,10 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
             {ttsState === 'idle' ? (
               <button
                 onClick={handleTtsPlay}
-                className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-white text-gray-700 border-surface-200 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300"
+                className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-white text-gray-700 border-surface-200 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300"
                 title="Listen to this chapter"
               >
-                <Headphones className="w-3.5 h-3.5" />
+                <Headphones className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Listen</span>
               </button>
             ) : (
@@ -342,19 +346,19 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
                 {ttsState === 'playing' ? (
                   <button
                     onClick={handleTtsPause}
-                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-primary-50 text-primary-700 border-primary-300 shadow-2xs animate-pulse"
+                    className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-primary-50 text-primary-700 border-primary-300 shadow-2xs animate-pulse"
                     title="Pause reading"
                   >
-                    <Pause className="w-3.5 h-3.5" />
+                    <Pause className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline">Pause</span>
                   </button>
                 ) : (
                   <button
                     onClick={handleTtsPlay}
-                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-amber-50 text-amber-700 border-amber-300"
+                    className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-amber-50 text-amber-700 border-amber-300"
                     title="Resume reading"
                   >
-                    <Headphones className="w-3.5 h-3.5" />
+                    <Headphones className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline">Resume</span>
                   </button>
                 )}
@@ -363,27 +367,20 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
                   className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                   title="Stop reading"
                 >
-                  <Square className="w-3.5 h-3.5" />
+                  <Square className="w-3.5 h-3.5 shrink-0" />
                 </button>
               </div>
             )}
 
-            {/* Audio Toggle (page flip sound) */}
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-surface-100 transition-colors"
-              title={soundEnabled ? 'Mute Page Flip Sound' : 'Enable Page Flip Sound'}
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-primary-600" /> : <VolumeX className="w-4 h-4 text-gray-400" />}
-            </button>
-
-            {/* Close */}
+            {/* ❌ CLOSE / CUT BOOK BUTTON (Replaces speaker; always prominent and accessible on mobile) */}
             <button
               onClick={onClose}
-              className="p-2 text-gray-500 hover:text-red-600 rounded-xl hover:bg-red-50 transition-colors"
-              title="Close Book (Esc)"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-bold rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-all flex items-center gap-1 shrink-0 shadow-2xs active:scale-95 ml-0.5"
+              title="Close Book / कट करें (Esc)"
+              aria-label="Close Book"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span className="hidden sm:inline font-black text-xs">Close</span>
             </button>
           </div>
         </div>
