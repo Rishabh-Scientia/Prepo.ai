@@ -87,7 +87,7 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
     setTimeout(() => {
       setCurrentPageIndex(newIndex);
       setIsFlipping(false);
-    }, 240);
+    }, 500);
   }, [totalPages, isFlipping, soundEnabled]);
 
   const handleNext = () => {
@@ -361,14 +361,13 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
 
             {/* ── RIGHT PANEL: ACTIVE CHAPTER CONTENT WITH 3D FLIP ANIMATION ── */}
             <div 
-              className={`flex-1 flex flex-col justify-between p-5 sm:p-8 bg-white overflow-y-auto relative transition-all duration-240 ${
+              className={`flex-1 flex flex-col justify-between p-5 sm:p-8 bg-white overflow-y-auto relative ${
                 isFlipping 
                   ? (turnDirection === 'next' 
-                      ? 'scale-[0.98] rotate-y-[-6deg] opacity-70 translate-x-2' 
-                      : 'scale-[0.98] rotate-y-[6deg] opacity-70 -translate-x-2') 
-                  : 'scale-100 rotate-y-0 opacity-100 translate-x-0'
+                      ? 'book-page-flip-next' 
+                      : 'book-page-flip-prev') 
+                  : ''
               }`}
-              style={{ transformOrigin: turnDirection === 'next' ? 'left center' : 'right center' }}
             >
               <div>
                 {/* Chapter Header */}

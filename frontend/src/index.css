@@ -60,6 +60,55 @@
   animation: bounceShort 0.3s ease-out;
 }
 
+/* ── 3D Book Page Flip Animations ─────────────────────────────────────── */
+@keyframes pageFlipNext {
+  0% {
+    transform: perspective(2000px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: none;
+  }
+  40% {
+    transform: perspective(2000px) rotateY(-35deg) scale(0.97);
+    opacity: 0.7;
+    box-shadow: -15px 0 40px -5px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: perspective(2000px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: none;
+  }
+}
+
+@keyframes pageFlipPrev {
+  0% {
+    transform: perspective(2000px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: none;
+  }
+  40% {
+    transform: perspective(2000px) rotateY(35deg) scale(0.97);
+    opacity: 0.7;
+    box-shadow: 15px 0 40px -5px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: perspective(2000px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: none;
+  }
+}
+
+.book-page-flip-next {
+  animation: pageFlipNext 0.5s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+}
+
+.book-page-flip-prev {
+  animation: pageFlipPrev 0.5s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  transform-origin: right center;
+  transform-style: preserve-3d;
+}
+
 /* ── KaTeX Math Formula Styling ────────────────────────────────────────── */
 .math-rendered-content {
   display: inline;
