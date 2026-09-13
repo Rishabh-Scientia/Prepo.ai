@@ -9,6 +9,9 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState(3);
+  const [plan, setPlan] = useState('free'); // 'free' | 'student' | 'teacher'
+  const [maxQuestions, setMaxQuestions] = useState(10);
+  const [hasTeacherAccess, setHasTeacherAccess] = useState(false);
   
   // Auth & Billing Modals State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -21,6 +24,15 @@ export function AuthProvider({ children }) {
       const data = await api.getUserCredits();
       if (data && typeof data.credits === 'number') {
         setCredits(data.credits);
+      }
+      if (data && data.plan) {
+        setPlan(data.plan);
+      }
+      if (data && typeof data.max_questions === 'number') {
+        setMaxQuestions(data.max_questions);
+      }
+      if (data && typeof data.has_teacher_access === 'boolean') {
+        setHasTeacherAccess(data.has_teacher_access);
       }
     } catch (err) {
       console.warn('Could not fetch user credits:', err.message);
@@ -48,6 +60,9 @@ export function AuthProvider({ children }) {
         fetchCredits();
       } else {
         setCredits(3);
+        setPlan('free');
+        setMaxQuestions(10);
+        setHasTeacherAccess(false);
       }
     });
 
@@ -92,6 +107,10 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('prepo_active_session_state');
+    setCredits(3);
+    setPlan('free');
+    setMaxQuestions(10);
+    setHasTeacherAccess(false);
   };
 
   const openSignIn = () => {
@@ -123,6 +142,9 @@ export function AuthProvider({ children }) {
     session,
     loading,
     credits,
+    plan,
+    maxQuestions,
+    hasTeacherAccess,
     fetchCredits,
     displayName,
     userInitial,

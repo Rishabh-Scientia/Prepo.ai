@@ -1,12 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileText, Trash2, Loader2, Sparkles, Gauge, Globe, Layers, ChevronDown, Check } from 'lucide-react';
-
-const QUESTION_COUNT_OPTIONS = [
-  { value: 5, label: '5 Questions (Quick Check)' },
-  { value: 10, label: '10 Questions (Standard)' },
-  { value: 15, label: '15 Questions (Deep Practice)' },
-  { value: 20, label: '20 Questions (Full Mock)' },
-];
+import { useAuth } from '../../context/AuthContext';
+import { UploadCloud, FileText, Trash2, Loader2, Sparkles, Gauge, Globe, Layers, ChevronDown, Check, Lock } from 'lucide-react';
 
 const DIFFICULTY_OPTIONS = [
   { value: 'Easy', label: 'Easy (Foundational)' },
@@ -68,17 +62,32 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
                 key={opt.value}
                 type="button"
                 onClick={() => {
+                  if (opt.isLocked) {
+                    if (opt.onLockedClick) opt.onLockedClick();
+                    setIsOpen(false);
+                    return;
+                  }
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
                 className={`w-full px-3.5 py-2 text-sm text-left flex items-center justify-between transition-colors ${
-                  isSelected
+                  opt.isLocked
+                    ? 'text-gray-500 hover:bg-amber-50/70 cursor-pointer'
+                    : isSelected
                     ? 'bg-primary-50 text-primary-700 font-bold'
                     : 'text-gray-700 hover:bg-surface-50'
                 }`}
               >
-                <span className="truncate">{opt.label}</span>
-                {isSelected && <Check className="w-4 h-4 text-primary-600 shrink-0 ml-2" />}
+                <div className="flex items-center gap-2 truncate">
+                  <span className="truncate">{opt.label}</span>
+                  {opt.isLocked && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                      <Lock className="w-2.5 h-2.5" />
+                      {opt.lockBadge}
+                    </span>
+                  )}
+                </div>
+                {isSelected && !opt.isLocked && <Check className="w-4 h-4 text-primary-600 shrink-0 ml-2" />}
               </button>
             );
           })}
@@ -89,6 +98,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
 }
 
 export function DocQuizGenerator({ onGenerateFromDoc, isLoading }) {
+  const { plan = 'free', maxQuestions = 10, openBuyCreditsModal } = useAuth();
   const [file, setFile] = useState(null);
   const [numQuestions, setNumQuestions] = useState(5);
   const [difficulty, setDifficulty] = useState('Medium');
@@ -96,6 +106,25 @@ export function DocQuizGenerator({ onGenerateFromDoc, isLoading }) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+
+  const questionCountOptions = [
+    { value: 5, label: '5 Questions (Quick Check)' },
+    { value: 10, label: '10 Questions (Standard)' },
+    { 
+      value: 15, 
+      label: '15 Questions (Deep Practice)',
+      isLocked: maxQuestions < 15,
+      lockBadge: 'Student (₹19)',
+      onLockedClick: () => openBuyCreditsModal(),
+    },
+    { 
+      value: 20, 
+      label: '20 Questions (Full Mock)',
+      isLocked: maxQuestions < 20,
+      lockBadge: 'Teacher (₹49)',
+      onLockedClick: () => openBuyCreditsModal(),
+    },
+  ];
 
   const handleFileChange = (selectedFile) => {
     setError('');
@@ -140,6 +169,12 @@ export function DocQuizGenerator({ onGenerateFromDoc, isLoading }) {
 
     if (!file) {
       setError('Please select or upload a document file.');
+      return;
+    }
+
+    if (numQuestions > maxQuestions) {
+      setError(`Your current plan allows up to ${maxQuestions} questions per test. Upgrade to generate ${numQuestions} questions.`);
+      openBuyCreditsModal();
       return;
     }
 
@@ -240,7 +275,7 @@ export function DocQuizGenerator({ onGenerateFromDoc, isLoading }) {
             <CustomSelect
               value={numQuestions}
               onChange={setNumQuestions}
-              options={QUESTION_COUNT_OPTIONS}
+              options={questionCountOptions}
             />
           </div>
 

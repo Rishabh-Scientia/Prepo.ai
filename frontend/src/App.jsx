@@ -35,7 +35,9 @@ export function App() {
     openBuyCreditsModal, 
     openCreditLimitModal, 
     fetchCredits, 
-    credits 
+    credits,
+    plan = 'free',
+    hasTeacherAccess = false
   } = useAuth();
 
   // Navigation State: 'home' | 'config' | 'attempt' | 'results' | 'profile' | 'student' | 'buzz'
@@ -279,21 +281,29 @@ export function App() {
 
   // Toggle between Student Mode and Teacher Mode
   const handleToggleUserMode = (newMode) => {
-    setUserMode(newMode);
-    try {
-      localStorage.setItem('prepo_user_mode', newMode);
-    } catch {}
-
     if (newMode === 'teacher') {
       if (!isLoggedIn) {
         openSignIn();
         showToast('Please sign in to access Teacher Classroom Suite', 'info');
         return;
       }
+      if (!hasTeacherAccess) {
+        openBuyCreditsModal();
+        showToast('Teacher Mode & Quiz Sharing is exclusive to the Teacher Pack (₹49).', 'info');
+        return;
+      }
+      setUserMode('teacher');
+      try {
+        localStorage.setItem('prepo_user_mode', 'teacher');
+      } catch {}
       setProfileTab('teacher');
       setCurrentPage('profile');
       showToast('Switched to Teacher Mode 👨‍🏫', 'success');
     } else {
+      setUserMode('student');
+      try {
+        localStorage.setItem('prepo_user_mode', 'student');
+      } catch {}
       if (currentPage === 'profile' && profileTab === 'teacher') {
         setCurrentPage('home');
       }
@@ -455,6 +465,11 @@ export function App() {
 
   // Teacher Share Quiz Action
   const handleShareCurrentQuiz = async () => {
+    if (!hasTeacherAccess) {
+      openBuyCreditsModal();
+      showToast('Teacher Mode and quiz sharing is exclusive to the Teacher Pack (₹49).', 'info');
+      return;
+    }
     const sessId = activeQuizData?.session_id || evaluationResults?.session_id;
     if (!sessId) {
       showToast('No active quiz found to share.', 'error');
@@ -472,6 +487,11 @@ export function App() {
 
   // Teacher Success Modal Handlers
   const handleTeacherShareFromModal = async () => {
+    if (!hasTeacherAccess) {
+      openBuyCreditsModal();
+      showToast('Teacher Mode and quiz sharing is exclusive to the Teacher Pack (₹49).', 'info');
+      return;
+    }
     if (!teacherSuccessQuiz?.session_id) return;
     try {
       const res = await api.shareQuiz(teacherSuccessQuiz.session_id);

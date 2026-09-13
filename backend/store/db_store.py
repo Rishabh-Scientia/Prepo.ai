@@ -788,20 +788,27 @@ def delete_shared_quiz(quiz_id: str, teacher_id: str) -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# USER CREDITS MANAGEMENT
+# USER CREDITS & SUBSCRIPTION MANAGEMENT
 # ═══════════════════════════════════════════════════════════════════════════
 
-def get_user_credits(user_id: str) -> int:
+def get_user_subscription(user_id: str) -> Dict[str, Any]:
     """
-    Get remaining credits for user_id.
+    Retrieve user subscription details (credits, tier, max questions, teacher access).
     If user has no record in user_credits table, lazy-initialize with 3 free credits.
     """
+    default_sub = {
+        "credits": 3,
+        "plan": "free",
+        "max_questions": 10,
+        "has_teacher_access": False,
+    }
+
     if not _API_KEY or not user_id:
-        return 3
+        return default_sub
 
     params = urllib.parse.urlencode({
         "user_id": f"eq.{user_id}",
-        "select": "credits",
+        "select": "*",
     })
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits?{params}"
 
@@ -815,26 +822,77 @@ def get_user_credits(user_id: str) -> int:
             res_body = response.read().decode("utf-8")
             results = json.loads(res_body)
             if isinstance(results, list) and len(results) > 0:
-                return results[0].get("credits", 3)
+                row = results[0]
+                plan = str(row.get("plan") or "free").lower()
+                credits_val = row.get("credits", 3)
+                
+                # Derive defaults if columns were null
+                if plan == "teacher":
+                    def_max_q = 20
+                    def_teacher = True
+                elif plan == "student":
+                    def_max_q = 15
+                    def_teacher = False
+                else:
+                    plan = "free"
+                    def_max_q = 10
+                    def_teacher = False
 
-        # User not found in user_credits -> initialize with 3 credits
+                max_questions = row.get("max_questions") or def_max_q
+                has_teacher_access = bool(row.get("has_teacher_access") if row.get("has_teacher_access") is not None else def_teacher)
+
+                return {
+                    "credits": int(credits_val),
+                    "plan": plan,
+                    "max_questions": int(max_questions),
+                    "has_teacher_access": has_teacher_access,
+                }
+
+        # User not found in user_credits -> initialize with 3 credits on free plan
         init_endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits"
-        init_payload = {"user_id": user_id, "credits": 3}
+        init_payload = {
+            "user_id": user_id,
+            "credits": 3,
+            "plan": "free",
+            "max_questions": 10,
+            "has_teacher_access": False,
+        }
         init_bytes = json.dumps(init_payload).encode("utf-8")
         headers = _get_headers()
         headers["Prefer"] = "resolution=merge-duplicates"
 
-        init_req = urllib.request.Request(
-            init_endpoint,
-            data=init_bytes,
-            headers=headers,
-            method="POST",
-        )
-        with urllib.request.urlopen(init_req) as response:
-            return 3
+        try:
+            init_req = urllib.request.Request(
+                init_endpoint,
+                data=init_bytes,
+                headers=headers,
+                method="POST",
+            )
+            with urllib.request.urlopen(init_req):
+                return default_sub
+        except Exception:
+            # Fallback if extra columns don't exist yet in Supabase schema
+            fallback_payload = {"user_id": user_id, "credits": 3}
+            fb_bytes = json.dumps(fallback_payload).encode("utf-8")
+            fb_req = urllib.request.Request(
+                init_endpoint,
+                data=fb_bytes,
+                headers=headers,
+                method="POST",
+            )
+            with urllib.request.urlopen(fb_req):
+                return default_sub
     except Exception as e:
-        print(f"ERROR getting/initializing user credits for {user_id}: {e}")
-        return 3
+        print(f"ERROR getting/initializing user subscription for {user_id}: {e}")
+        return default_sub
+
+
+def get_user_credits(user_id: str) -> int:
+    """
+    Get remaining credits for user_id.
+    """
+    sub = get_user_subscription(user_id)
+    return sub.get("credits", 3)
 
 
 def deduct_user_credit(user_id: str) -> int:
@@ -864,18 +922,46 @@ def deduct_user_credit(user_id: str) -> int:
         return new_credits
 
 
-def add_user_credits(user_id: str, credits_to_add: int) -> int:
+def add_user_credits(user_id: str, credits_to_add: int, plan_id: str = "") -> int:
     """
-    Add credits to user_id in Supabase and return new total credits.
+    Add credits to user_id in Supabase and update plan tier if applicable.
+    Returns new total credits.
     """
     if not _API_KEY or not user_id:
         return 3 + credits_to_add
 
-    current = get_user_credits(user_id)
-    new_credits = current + credits_to_add
+    sub = get_user_subscription(user_id)
+    current_credits = sub.get("credits", 0)
+    current_plan = sub.get("plan", "free")
+    new_credits = current_credits + credits_to_add
+
+    # Determine plan upgrades
+    new_plan = current_plan
+    new_max_q = sub.get("max_questions", 10)
+    new_teacher_access = sub.get("has_teacher_access", False)
+
+    if plan_id in ("plan_teacher", "plan_49"):
+        new_plan = "teacher"
+        new_max_q = 20
+        new_teacher_access = True
+    elif plan_id in ("plan_student", "plan_19"):
+        # If user was already a teacher, don't downgrade teacher privileges
+        if current_plan != "teacher":
+            new_plan = "student"
+            new_max_q = 15
+            new_teacher_access = False
+        else:
+            new_max_q = 20
+            new_teacher_access = True
 
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/user_credits?user_id=eq.{user_id}"
-    payload = {"credits": new_credits}
+    payload = {
+        "credits": new_credits,
+        "plan": new_plan,
+        "max_questions": new_max_q,
+        "has_teacher_access": new_teacher_access,
+    }
+
     try:
         data_bytes = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
@@ -884,11 +970,24 @@ def add_user_credits(user_id: str, credits_to_add: int) -> int:
             headers=_get_headers(),
             method="PATCH",
         )
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req):
             return new_credits
     except Exception as e:
-        print(f"ERROR adding credits for {user_id}: {e}")
-        return new_credits
+        # Fallback to simple credit update if schema columns not added yet
+        try:
+            fb_payload = {"credits": new_credits}
+            fb_bytes = json.dumps(fb_payload).encode("utf-8")
+            fb_req = urllib.request.Request(
+                endpoint,
+                data=fb_bytes,
+                headers=_get_headers(),
+                method="PATCH",
+            )
+            with urllib.request.urlopen(fb_req):
+                return new_credits
+        except Exception as fb_err:
+            print(f"ERROR adding credits for {user_id}: {fb_err}")
+            return new_credits
 
 
 def record_payment(

@@ -36,6 +36,8 @@ export function Navbar({
     displayName, 
     userInitial, 
     credits, 
+    plan = 'free',
+    hasTeacherAccess = false,
     openSignIn, 
     openBuyCreditsModal, 
     signOut 
@@ -75,16 +77,44 @@ export function Navbar({
     <nav className="bg-white/95 backdrop-blur-md border-b border-surface-200/80 sticky top-0 z-40 transition-all">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         
-        {/* Brand Logo & Tagline */}
+        {/* Brand Logo & Tagline - Dynamic Theme Colors based on Subscription Plan */}
         <div className="flex items-center gap-3">
           <button 
             onClick={() => handleNavClick(userMode === 'teacher' ? 'profile' : 'home', 'teacher')}
             className="flex items-center gap-2 focus:outline-none group text-left"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105 ${
+              plan === 'teacher'
+                ? 'bg-gradient-to-br from-emerald-800 via-teal-800 to-green-950 border border-emerald-500/40 shadow-emerald-900/30'
+                : plan === 'student'
+                ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 border border-blue-500/40 shadow-blue-900/30'
+                : 'bg-gradient-to-br from-primary-600 to-primary-700'
+            }`}>
               <span className="text-white font-black text-base">P</span>
             </div>
-            <span className="font-extrabold text-lg text-gray-900 tracking-tight">Prepo<span className="text-primary-600">.ai</span></span>
+            <div className="flex items-center">
+              <span className="font-extrabold text-lg text-gray-900 tracking-tight">
+                Prepo
+                <span className={plan === 'teacher' ? 'text-emerald-600' : plan === 'student' ? 'text-blue-700' : 'text-primary-600'}>
+                  .ai
+                </span>
+              </span>
+              {plan === 'teacher' && (
+                <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-900 text-emerald-100 border border-emerald-600 shadow-2xs">
+                  Teacher
+                </span>
+              )}
+              {plan === 'student' && (
+                <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-900 text-blue-100 border border-blue-600 shadow-2xs">
+                  Student
+                </span>
+              )}
+              {plan === 'free' && (
+                <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md bg-surface-200 text-gray-600 border border-surface-300">
+                  Free
+                </span>
+              )}
+            </div>
           </button>
 
           {/* Dual Mode Switcher Pill (Desktop) */}
@@ -107,13 +137,18 @@ export function Navbar({
               onClick={() => handleModeChange('teacher')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 userMode === 'teacher'
-                  ? 'bg-gradient-to-r from-indigo-600 to-primary-700 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-xs'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
               }`}
-              title="Teacher Mode: Create classroom tests and track live student submissions"
+              title={hasTeacherAccess ? "Teacher Mode: Create classroom tests and track live student submissions" : "Teacher Mode (Requires Teacher Pack ₹49)"}
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Teacher</span>
+              {!hasTeacherAccess && (
+                <span className="text-[9px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.2 rounded border border-amber-300">
+                  ₹49
+                </span>
+              )}
             </button>
           </div>
         </div>

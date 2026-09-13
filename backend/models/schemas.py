@@ -205,5 +205,17 @@ class VerifyPaymentResponse(BaseModel):
     """Response payload confirming payment verification and credit addition."""
     success: bool
     credits: int
+    plan: str = "free"
+    max_questions: int = 10
+    has_teacher_access: bool = False
     message: str
+
+
+class UserSubscriptionResponse(BaseModel):
+    """User subscription status response."""
+    credits: int
+    plan: str
+    max_questions: int
+    has_teacher_access: bool
+
 

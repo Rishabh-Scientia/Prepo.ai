@@ -37,6 +37,7 @@ from models.schemas import (
     CreateOrderResponse,
     VerifyPaymentRequest,
     VerifyPaymentResponse,
+    UserSubscriptionResponse,
 )
 from store.session_store import session_store
 from store.db_store import (
@@ -49,6 +50,7 @@ from store.db_store import (
     get_teacher_shared_quizzes,
     get_quiz_student_responses,
     get_user_credits,
+    get_user_subscription,
     deduct_user_credit,
     add_user_credits,
     record_payment,
@@ -106,14 +108,14 @@ def health_check():
     return {"status": "ok", "service": "prepo-ai"}
 
 
-@app.get("/api/user/credits")
+@app.get("/api/user/credits", response_model=UserSubscriptionResponse)
 async def fetch_user_credits(user: dict = Depends(get_current_user)):
     """
-    Get remaining free credits for current user.
+    Get user subscription status (credits, plan tier, max questions, teacher access).
     """
     user_id = user.get("user_id")
-    credits = get_user_credits(user_id)
-    return {"credits": credits}
+    sub = get_user_subscription(user_id)
+    return sub
 
 
 @app.post("/api/generate-quiz", response_model=GenerateQuizResponse)
@@ -125,12 +127,22 @@ async def generate_quiz(request: GenerateQuizRequest, user: dict = Depends(get_c
     """
     user_id = user.get("user_id")
 
-    # 1. Credit Check
-    credits = get_user_credits(user_id)
+    # 1. Subscription & Credit Check
+    sub = get_user_subscription(user_id)
+    credits = sub.get("credits", 0)
     if credits <= 0:
         raise HTTPException(
             status_code=403,
             detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Please top up credits to generate quizzes.",
+        )
+
+    # 2. Plan Question Limit Enforcement
+    max_allowed = sub.get("max_questions", 10)
+    if request.num_questions > max_allowed:
+        plan_name = sub.get("plan", "free").capitalize()
+        raise HTTPException(
+            status_code=403,
+            detail=f"PLAN_QUESTION_LIMIT: Your {plan_name} plan allows generating up to {max_allowed} questions per quiz. Please select up to {max_allowed} questions or upgrade your plan.",
         )
 
     # Run the generation graph
@@ -206,12 +218,22 @@ async def generate_quiz_from_doc(
     """
     user_id = user.get("user_id")
 
-    # 1. Credit Check
-    credits = get_user_credits(user_id)
+    # 1. Subscription & Credit Check
+    sub = get_user_subscription(user_id)
+    credits = sub.get("credits", 0)
     if credits <= 0:
         raise HTTPException(
             status_code=403,
             detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Please top up credits to generate quizzes.",
+        )
+
+    # 2. Plan Question Limit Enforcement
+    max_allowed = sub.get("max_questions", 10)
+    if int(num_questions) > max_allowed:
+        plan_name = sub.get("plan", "free").capitalize()
+        raise HTTPException(
+            status_code=403,
+            detail=f"PLAN_QUESTION_LIMIT: Your {plan_name} plan allows generating up to {max_allowed} questions per quiz. Please select up to {max_allowed} questions or upgrade your plan.",
         )
 
     # 2. Read File Bytes & Validate Size (Max 20MB)
@@ -458,12 +480,20 @@ async def share_quiz(payload: dict, user: dict = Depends(get_current_user)):
 
     user_id = user.get("user_id")
 
+    # Teacher Mode Access Check
+    sub = get_user_subscription(user_id)
+    if not sub.get("has_teacher_access", False):
+        raise HTTPException(
+            status_code=403,
+            detail="TEACHER_ACCESS_REQUIRED: Teacher Mode and quiz sharing is exclusive to the Teacher Pack (₹49). Please upgrade your plan to share quizzes with students.",
+        )
+
     # Credit Check for sharing
-    credits = get_user_credits(user_id)
+    credits = sub.get("credits", 0)
     if credits <= 0:
         raise HTTPException(
             status_code=403,
-            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Contact yoursbench@gmail.com for getting more credit.",
+            detail="CREDIT_LIMIT_REACHED: You have reached your credit limit. Please top up credits to share quizzes.",
         )
 
     email = user.get("email", "Teacher")
@@ -628,31 +658,43 @@ RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
 CREDIT_PLANS = {
-    "plan_30": {
-        "plan_id": "plan_30",
-        "name": "Starter Pack",
-        "amount": 900,  # 900 paise = ₹9.00
+    "plan_student": {
+        "plan_id": "plan_student",
+        "name": "Student Pack",
+        "amount": 1900,  # 1900 paise = ₹19.00
         "currency": "INR",
-        "credits": 30,
-        "price_display": "₹9",
-        "per_quiz": "₹0.30",
-        "description": "30 AI Quiz Generations with step-by-step solutions",
-        "badge": "Starter",
-        "popular": False,
+        "credits": 50,
+        "max_questions": 15,
+        "price_display": "₹19",
+        "per_quiz": "₹0.38",
+        "description": "50 AI Quiz Generations (up to 15 questions each), All 10 AI Academy modules unlocked",
+        "badge": "Student Choice",
+        "popular": True,
+        "theme": "blue",
+        "has_teacher_access": False,
     },
-    "plan_100": {
-        "plan_id": "plan_100",
-        "name": "Pro Pack",
-        "amount": 2900,  # 2900 paise = ₹29.00
+    "plan_teacher": {
+        "plan_id": "plan_teacher",
+        "name": "Teacher Pack",
+        "amount": 4900,  # 4900 paise = ₹49.00
         "currency": "INR",
         "credits": 100,
-        "price_display": "₹29",
-        "per_quiz": "₹0.29",
-        "description": "100 AI Quiz Generations + Teacher sharing enabled",
-        "badge": "Best Value",
-        "popular": True,
+        "max_questions": 20,
+        "price_display": "₹49",
+        "per_quiz": "₹0.49",
+        "description": "100 AI Quiz Generations (up to 20 questions each), Full Teacher Mode with quiz sharing & student tracking, All modules unlocked",
+        "badge": "Teacher Pro",
+        "popular": False,
+        "theme": "green",
+        "has_teacher_access": True,
     },
 }
+
+# Aliases for backward compatibility and flexible checkout
+CREDIT_PLANS["plan_19"] = CREDIT_PLANS["plan_student"]
+CREDIT_PLANS["plan_49"] = CREDIT_PLANS["plan_teacher"]
+CREDIT_PLANS["plan_30"] = CREDIT_PLANS["plan_student"]
+CREDIT_PLANS["plan_100"] = CREDIT_PLANS["plan_teacher"]
 
 
 def _create_razorpay_order(amount: int, currency: str, receipt: str, notes: dict) -> dict:
@@ -793,8 +835,9 @@ async def verify_payment(request: VerifyPaymentRequest, user: dict = Depends(get
             detail="Payment verification failed: Invalid payment signature.",
         )
 
-    # 2. Add credits to user in Supabase
-    new_credits = add_user_credits(user_id=user_id, credits_to_add=plan["credits"])
+    # 2. Add credits to user in Supabase and upgrade plan
+    new_credits = add_user_credits(user_id=user_id, credits_to_add=plan["credits"], plan_id=request.plan_id)
+    updated_sub = get_user_subscription(user_id)
 
     # 3. Log transaction in Supabase payments table
     record_payment(
@@ -810,6 +853,9 @@ async def verify_payment(request: VerifyPaymentRequest, user: dict = Depends(get
     return VerifyPaymentResponse(
         success=True,
         credits=new_credits,
+        plan=updated_sub.get("plan", "free"),
+        max_questions=updated_sub.get("max_questions", 10),
+        has_teacher_access=updated_sub.get("has_teacher_access", False),
         message=f"Payment verified! {plan['credits']} credits added successfully to your account.",
     )
 

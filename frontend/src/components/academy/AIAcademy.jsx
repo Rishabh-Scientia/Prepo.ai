@@ -13,11 +13,13 @@ import {
   Bot,
   Globe
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { COMPLETE_AI_ACADEMY_MODULES, ACADEMY_CATEGORIES, resolveLang } from '../../data/aiAcademyCourses';
 import BookCard from './BookCard';
 import BookReaderModal from './BookReaderModal';
 
 export function AIAcademy({ onNavigate, onShowToast }) {
+  const { plan = 'free', openBuyCreditsModal } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBook, setActiveBook] = useState(null);
@@ -38,6 +40,13 @@ export function AIAcademy({ onNavigate, onShowToast }) {
   }, [selectedCategory, searchQuery]);
 
   const handleOpenBook = (module) => {
+    if (module.moduleNumber > 3 && plan === 'free') {
+      if (onShowToast) {
+        onShowToast('Modules 4 to 10 are unlocked with the Student Pack (₹19) or Teacher Pack (₹49)!', 'info');
+      }
+      openBuyCreditsModal();
+      return;
+    }
     setActiveBook(module);
   };
 
@@ -165,6 +174,13 @@ export function AIAcademy({ onNavigate, onShowToast }) {
               <BookCard 
                 key={module.id} 
                 module={module} 
+                isLocked={module.moduleNumber > 3 && plan === 'free'}
+                onLockedClick={() => {
+                  if (onShowToast) {
+                    onShowToast('Modules 4 to 10 are unlocked with the Student Pack (₹19) or Teacher Pack (₹49)!', 'info');
+                  }
+                  openBuyCreditsModal();
+                }}
                 onOpenBook={handleOpenBook} 
               />
             ))}
