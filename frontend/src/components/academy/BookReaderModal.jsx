@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   X, 
   ChevronLeft, 
@@ -18,7 +18,10 @@ import {
   HelpCircle,
   ArrowRight,
   Globe,
-  Layers
+  Layers,
+  Headphones,
+  Pause,
+  Square
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, resolveLang } from '../../data/aiAcademyCourses';
 import MarkdownContent from './MarkdownContent';
@@ -68,6 +71,10 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
   const [turnDirection, setTurnDirection] = useState('next');
   const [isFlipping, setIsFlipping] = useState(false);
 
+  // Text-to-Speech state
+  const [ttsState, setTtsState] = useState('idle'); // 'idle' | 'playing' | 'paused'
+  const ttsUtteranceRef = useRef(null);
+
   // Selected answer for quiz pages: { [pageIndex]: selectedOptionIndex }
   const [selectedQuizAnswers, setSelectedQuizAnswers] = useState({});
 
@@ -76,6 +83,114 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
 
   // Helper to resolve multilingual strings cleanly
   const t = (field) => resolveLang(field, currentLang);
+
+  // ── TEXT-TO-SPEECH ENGINE ──────────────────────────────────────────────
+  const stripMarkdown = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/#{1,6}\s*/g, '')        // headings
+      .replace(/\*\*(.+?)\*\*/g, '$1')   // bold
+      .replace(/\*(.+?)\*/g, '$1')       // italic
+      .replace(/`(.+?)`/g, '$1')         // inline code
+      .replace(/^-\s+/gm, '')            // list bullets
+      .replace(/^\d+\.\s+/gm, '')        // numbered lists
+      .replace(/\|/g, ' ')               // table pipes
+      .replace(/---+/g, '')              // hr
+      .replace(/\n{2,}/g, '. ')          // double newlines to pause
+      .replace(/\n/g, ' ')               // single newlines
+      .trim();
+  };
+
+  const getTtsLang = () => {
+    if (currentLang === 'hi') return 'hi-IN';
+    if (currentLang === 'hinglish') return 'hi-IN';
+    return 'en-US';
+  };
+
+  const buildSpeechText = () => {
+    const parts = [];
+    const page = currentPage;
+    if (page.title) parts.push(t(page.title));
+    if (page.subtitle) parts.push(t(page.subtitle));
+    if (page.content) parts.push(stripMarkdown(t(page.content)));
+    if (page.analogy) {
+      parts.push(t(page.analogy.title));
+      parts.push(t(page.analogy.text));
+    }
+    if (page.keyTakeaway) parts.push('Key takeaway. ' + t(page.keyTakeaway));
+    return parts.join('. ');
+  };
+
+  const handleTtsPlay = () => {
+    if (!('speechSynthesis' in window)) {
+      if (onShowToast) onShowToast('Your browser does not support text-to-speech.', 'error');
+      return;
+    }
+
+    if (ttsState === 'paused') {
+      window.speechSynthesis.resume();
+      setTtsState('playing');
+      return;
+    }
+
+    // Stop any existing speech first
+    window.speechSynthesis.cancel();
+
+    const text = buildSpeechText();
+    if (!text) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = getTtsLang();
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    // Try to find a matching voice
+    const voices = window.speechSynthesis.getVoices();
+    const langCode = getTtsLang();
+    const match = voices.find(v => v.lang === langCode) || voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+    if (match) utterance.voice = match;
+
+    utterance.onend = () => setTtsState('idle');
+    utterance.onerror = () => setTtsState('idle');
+
+    ttsUtteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+    setTtsState('playing');
+  };
+
+  const handleTtsPause = () => {
+    if (ttsState === 'playing') {
+      window.speechSynthesis.pause();
+      setTtsState('paused');
+    }
+  };
+
+  const handleTtsStop = () => {
+    window.speechSynthesis.cancel();
+    setTtsState('idle');
+  };
+
+  // Stop TTS when page changes or component unmounts
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+      setTtsState('idle');
+    };
+  }, [currentPageIndex]);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  // Pre-load voices (some browsers load them async)
+  useEffect(() => {
+    window.speechSynthesis?.getVoices();
+    const handleVoices = () => window.speechSynthesis?.getVoices();
+    window.speechSynthesis?.addEventListener?.('voiceschanged', handleVoices);
+    return () => window.speechSynthesis?.removeEventListener?.('voiceschanged', handleVoices);
+  }, []);
 
   // Flip Page with 3D animation physics
   const goToPage = useCallback((newIndex, direction = 'next') => {
@@ -212,7 +327,48 @@ export function BookReaderModal({ module, onClose, onShowToast }) {
               <span className="hidden sm:inline">Chapters ({totalPages})</span>
             </button>
 
-            {/* Audio Toggle */}
+            {/* 🔊 LISTEN / TEXT-TO-SPEECH CONTROLS */}
+            {ttsState === 'idle' ? (
+              <button
+                onClick={handleTtsPlay}
+                className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-white text-gray-700 border-surface-200 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300"
+                title="Listen to this chapter"
+              >
+                <Headphones className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Listen</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1">
+                {ttsState === 'playing' ? (
+                  <button
+                    onClick={handleTtsPause}
+                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-primary-50 text-primary-700 border-primary-300 shadow-2xs animate-pulse"
+                    title="Pause reading"
+                  >
+                    <Pause className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Pause</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleTtsPlay}
+                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 bg-amber-50 text-amber-700 border-amber-300"
+                    title="Resume reading"
+                  >
+                    <Headphones className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Resume</span>
+                  </button>
+                )}
+                <button
+                  onClick={handleTtsStop}
+                  className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                  title="Stop reading"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Audio Toggle (page flip sound) */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-surface-100 transition-colors"
