@@ -10,9 +10,10 @@ import {
   ArrowRight,
   Flame,
   Zap,
-  Bot
+  Bot,
+  Globe
 } from 'lucide-react';
-import { AI_ACADEMY_MODULES, ACADEMY_CATEGORIES } from '../../data/aiAcademyCourses';
+import { COMPLETE_AI_ACADEMY_MODULES, ACADEMY_CATEGORIES, resolveLang } from '../../data/aiAcademyCourses';
 import BookCard from './BookCard';
 import BookReaderModal from './BookReaderModal';
 
@@ -21,15 +22,18 @@ export function AIAcademy({ onNavigate, onShowToast }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBook, setActiveBook] = useState(null);
 
-  // Filter modules based on category and search query
+  // Filter modules based on category and search query across all 3 languages
   const filteredModules = useMemo(() => {
-    return AI_ACADEMY_MODULES.filter((module) => {
+    return COMPLETE_AI_ACADEMY_MODULES.filter((module) => {
       const matchesCategory = selectedCategory === 'all' || module.category === selectedCategory;
-      const matchesQuery = 
-        module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        module.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        module.summary.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return matchesCategory;
+
+      const titleStr = `${resolveLang(module.title, 'en')} ${resolveLang(module.title, 'hinglish')} ${resolveLang(module.title, 'hi')}`.toLowerCase();
+      const subtitleStr = `${resolveLang(module.subtitle, 'en')} ${resolveLang(module.subtitle, 'hinglish')}`.toLowerCase();
+      const summaryStr = `${resolveLang(module.summary, 'en')} ${resolveLang(module.summary, 'hinglish')}`.toLowerCase();
+
+      return matchesCategory && (titleStr.includes(q) || subtitleStr.includes(q) || summaryStr.includes(q));
     });
   }, [selectedCategory, searchQuery]);
 
@@ -55,23 +59,23 @@ export function AIAcademy({ onNavigate, onShowToast }) {
             {/* Tag */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-bold mb-3.5 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              <span>Interactive Digital Library • Prepo Academy</span>
+              <span>Interactive Digital Library • 10 In-Depth Books</span>
             </div>
 
             {/* Heading */}
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight mb-3">
-              Master AI Through <span className="text-amber-300">Interactive 3D Books</span>
+              Master AI Through <span className="text-amber-300">10 Comprehensive Books</span>
             </h1>
 
             {/* Description */}
             <p className="text-xs sm:text-sm text-blue-100 font-medium leading-relaxed mb-6">
-              Learn Artificial Intelligence from ground zero. No complex math jargon — just relatable real-world stories, 3D flipbook reading, hands-on prompts to copy-paste into ChatGPT/Gemini, and instant checkpoints.
+              Learn Artificial Intelligence from ground zero. 10 deep chapters in every book, 3-language switcher (English default, Hinglish & Hindi), 3D page curl reader, and ready-to-test prompt labs.
             </p>
 
             {/* Quick Action */}
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => handleOpenBook(AI_ACADEMY_MODULES[0])}
+                onClick={() => handleOpenBook(COMPLETE_AI_ACADEMY_MODULES[0])}
                 className="px-5 py-2.5 rounded-xl bg-white text-primary-800 hover:bg-blue-50 font-black text-xs sm:text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all"
               >
                 <BookOpen className="w-4 h-4 text-primary-700" />
@@ -80,8 +84,8 @@ export function AIAcademy({ onNavigate, onShowToast }) {
               </button>
 
               <div className="flex items-center gap-2 text-xs font-bold text-blue-200">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>10 Modules Ready • 100% Free</span>
+                <Globe className="w-4 h-4 text-amber-300" />
+                <span>Available in English, Hinglish & Hindi</span>
               </div>
             </div>
           </div>
@@ -89,20 +93,20 @@ export function AIAcademy({ onNavigate, onShowToast }) {
           {/* Quick Stats on Right for Large Screens */}
           <div className="hidden lg:grid absolute right-10 top-1/2 -translate-y-1/2 grid-cols-2 gap-3 w-72">
             <div className="p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15">
-              <span className="text-2xl font-black text-white block">10</span>
-              <span className="text-[11px] font-semibold text-blue-200">Full Digital Books</span>
+              <span className="text-2xl font-black text-white block">100</span>
+              <span className="text-[11px] font-semibold text-blue-200">Total Chapters</span>
             </div>
             <div className="p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15">
-              <span className="text-2xl font-black text-amber-300 block">50+</span>
-              <span className="text-[11px] font-semibold text-blue-200">Ready Prompts</span>
+              <span className="text-2xl font-black text-amber-300 block">3</span>
+              <span className="text-[11px] font-semibold text-blue-200">Languages (EN/HI)</span>
             </div>
             <div className="p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15">
-              <span className="text-2xl font-black text-emerald-300 block">10</span>
-              <span className="text-[11px] font-semibold text-blue-200">Mini Checkpoints</span>
+              <span className="text-2xl font-black text-emerald-300 block">50+</span>
+              <span className="text-[11px] font-semibold text-blue-200">Tested Prompts</span>
             </div>
             <div className="p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15">
               <span className="text-2xl font-black text-cyan-200 block">3D</span>
-              <span className="text-[11px] font-semibold text-blue-200">Flipbook Engine</span>
+              <span className="text-[11px] font-semibold text-blue-200">Page Curl Engine</span>
             </div>
           </div>
         </div>
@@ -132,7 +136,7 @@ export function AIAcademy({ onNavigate, onShowToast }) {
 
             {/* Results count */}
             <div className="text-xs font-bold text-gray-500 self-end sm:self-center">
-              Showing {filteredModules.length} of {AI_ACADEMY_MODULES.length} books
+              Showing {filteredModules.length} of {COMPLETE_AI_ACADEMY_MODULES.length} books
             </div>
           </div>
 
@@ -148,7 +152,7 @@ export function AIAcademy({ onNavigate, onShowToast }) {
                     : 'bg-white text-gray-600 hover:bg-surface-50 border border-surface-200'
                 }`}
               >
-                {cat.label}
+                {resolveLang(cat.label, 'en')}
               </button>
             ))}
           </div>
